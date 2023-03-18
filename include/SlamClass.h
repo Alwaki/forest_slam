@@ -1,5 +1,14 @@
+/**
+ * @file SlamClass.h
+ * @brief Class file for landmark based SLAM using GTSAM solver library
+ * @author Alexander Wallén Kiessling
+ */
+
+#pragma once
+
 #include "gtsam/geometry/Pose2.h"
 #include "gtsam/geometry/Point2.h"
+#include "gtsam/inference/Symbol.h"
 #include "gtsam/slam/PriorFactor.h"
 #include "gtsam/slam/BetweenFactor.h"
 #include "gtsam/sam/BearingRangeFactor.h"
@@ -11,3 +20,11 @@
 #include "cmath"
 #include "Eigen/Dense"
 #include "random"
+
+class SLAM
+{
+    private:
+        gtsam::NonlinearFactorGraph _graph; 
+        std::vector<gtsam::Symbol> _pose_symbols; 
+        std::vector<gtsam::Symbol> _landmark_symbols;
+};
