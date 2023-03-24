@@ -5,6 +5,7 @@
  */
 
 #include "SlamNode.h"
-#include "SlamClass.h"
+#include "GraphOptimizer.h"
+#include "FeatureEstimator.h"
 
 

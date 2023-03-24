@@ -21,7 +21,7 @@
 #include "Eigen/Dense"
 #include "random"
 
-class SLAM
+class GraphOptimizer
 {
     private:
         gtsam::NonlinearFactorGraph     _graph; 
