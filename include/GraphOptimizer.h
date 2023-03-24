@@ -1,6 +1,6 @@
 /**
- * @file SlamClass.h
- * @brief Class file for landmark based SLAM using GTSAM solver library
+ * @file GraphOptimizer.h
+ * @brief Class file for the SLAM backend using GTSAM solver library
  * @author Alexander Wallén Kiessling
  */
 
@@ -24,7 +24,7 @@
 class SLAM
 {
     private:
-        gtsam::NonlinearFactorGraph _graph; 
-        std::vector<gtsam::Symbol> _pose_symbols; 
-        std::vector<gtsam::Symbol> _landmark_symbols;
+        gtsam::NonlinearFactorGraph     _graph; 
+        std::vector<gtsam::Symbol>      _pose_symbols; 
+        std::vector<gtsam::Symbol>      _landmark_symbols;
 };
