@@ -1,6 +1,6 @@
 /**
  * @file SlamNode.cpp
- * @brief ROS node to get incoming data and run all SLAM functionality
+ * @brief ROS interface node to handle incoming data and run all SLAM functionality
  * @author Alexander Wallén Kiessling
  */
 
