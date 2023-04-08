@@ -7,6 +7,17 @@
 #pragma once
 
 #include "ros.h"
+#include <pcl/point_cloud.h>
+#include "sensor_msgs/Imu.h"
+#include "sensor_msgs/PointCloud2.h"
+#include "geometry_msgs/PointStamped.h"
+#include "geometry_msgs/PoseStamped.h"
+#include "livox_ros_driver/CustomMsg.h"
+
+#include <deque>
+#include <thread>
+#include <string>
+#include <stdio.h>
 
 class SlamNode
 {
@@ -22,4 +33,5 @@ class SlamNode
         ros::Subscriber         _imu_vectornav_sub;
         ros::Publisher          _pos_landmark_pub;
         
+        void _init_node();
 };
