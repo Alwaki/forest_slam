@@ -23,8 +23,17 @@
 
 class GraphOptimizer
 {
+    public:
+        GraphOptimizer();
+        virtual ~GraphOptimizer();
+        void add_landmark(const gtsam::Symbol::ConstPtr &landmarkMsg);
+        void add_pose(const gtsam::Symbol::ConstPtr &poseMsg);
+        void optimize();
+        void get_map();
+
     private:
         gtsam::NonlinearFactorGraph     _graph; 
         std::vector<gtsam::Symbol>      _pose_symbols; 
         std::vector<gtsam::Symbol>      _landmark_symbols;
+    
 };
