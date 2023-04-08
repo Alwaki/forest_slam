@@ -1,4 +1,14 @@
 # forest_slam
+## TODO
+SlamNode is intended to be the main ROS interface. This is where backend and frontend are launched.
+
+Backend needs to get landmarks and poses from the frontend. These are then optimized into a better map.
+
+Frontend needs to provide landmark and pose information to backend, in terms of x-y for landmark and x-y-theta for pose. 
+
+Current idea is to first segment ground points. This can be used to identify tree clusters, and to help estimate the tilt of the lidar between scans. 
+
+Then identify tree clusters. Use curvature to get a center point, x-y which is returned to backend. We cam also do some form of registration of these landmarks between the latest and previous to get a new pose from the resultant transform, which is also passed to the backend.
 
 ## Overview
 
