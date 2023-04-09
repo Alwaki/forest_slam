@@ -1,0 +1,4 @@
+<launch>
+    <node pkg="rosbag" type="play" name="player" 
+    output="screen" args="--clock /home/alwaki/Downloads/tmn__2023-02-13-12-27-05.bag"/>
+</launch>
