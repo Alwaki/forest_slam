@@ -1,4 +1,18 @@
 <launch>
-    <node pkg="rosbag" type="play" name="player" 
-    output="screen" args="--clock /home/alwaki/Downloads/tmn__2023-02-13-12-27-05.bag"/>
+
+    <!-- Forest dataset -->
+    <arg  name="bag_file"  
+    default="/home/alwaki/Downloads/tmn__2023-02-13-12-27-05.bag"/> 
+    <arg name="start_time" default="0"/>
+
+    <!-- Play the bag file -->
+    <param name="/use_sim_time" value="true" />
+
+    <node required="true" pkg="rosbag" type="play" name="rosbag_player"
+        args="--clock $(arg bag_file) -r 0.5 -s $(arg start_time)"
+        launch-prefix="bash -c 'sleep 1; $0 $@' "/>
+
+    <!-- Run the lidar correction node -->
+      <node pkg="forest_slam" type="forest_slam_node" name="slam_node"
+       respawn="false" output="screen" required="true"> </node>
 </launch>
