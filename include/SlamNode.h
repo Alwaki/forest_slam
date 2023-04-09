@@ -8,6 +8,8 @@
 
 #include <ros/ros.h>
 #include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl_conversions/pcl_conversions.h>
 #include "sensor_msgs/Imu.h"
 #include "sensor_msgs/PointCloud2.h"
 #include "geometry_msgs/PointStamped.h"
@@ -19,12 +21,28 @@
 #include <string>
 #include <stdio.h>
 
+struct EIGEN_ALIGN16 PointXYZIT
+{
+    PCL_ADD_POINT4D;
+    PCL_ADD_INTENSITY;
+    std::uint32_t time;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+
+POINT_CLOUD_REGISTER_POINT_STRUCT(PointXYZIT,
+                                 (float, x, x) (float, y, y) (float, z, z)
+                                 (float, intensity, intensity) 
+                                 (std::uint32_t, time, time))
+
+typedef pcl::PointCloud<PointXYZIT>       CloudXYZIT;
+typedef pcl::PointCloud<PointXYZIT>::Ptr  CloudXYZITPtr;
+
+
 class SlamNode
 {
     public:
        SlamNode();
        virtual ~SlamNode();
-       void node_thread();
 
     private:
         ros::NodeHandle         _nh;
@@ -32,8 +50,10 @@ class SlamNode
         ros::Subscriber         _lidar_livox_sub;
         ros::Subscriber         _imu_vectornav_sub;
         ros::Subscriber         _imu_ouster_sub;
-        //ros::Publisher          _pos_landmark_pub;
-        
+        ros::Publisher          _lidar_livox_pub;
+
+        std::mutex              _lidar_livox_mtx;
+
         void _init_node();
         void _lidar_livox_callback(const livox_ros_driver::CustomMsg::ConstPtr &msgIn);
         void _lidar_ouster_callback(const sensor_msgs::PointCloud2::ConstPtr &msgIn);
