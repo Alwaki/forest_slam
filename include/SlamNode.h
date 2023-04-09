@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "ros.h"
+#include <ros/ros.h>
 #include <pcl/point_cloud.h>
 #include "sensor_msgs/Imu.h"
 #include "sensor_msgs/PointCloud2.h"
@@ -31,7 +31,12 @@ class SlamNode
         ros::Subscriber         _lidar_ouster_sub;
         ros::Subscriber         _lidar_livox_sub;
         ros::Subscriber         _imu_vectornav_sub;
-        ros::Publisher          _pos_landmark_pub;
+        ros::Subscriber         _imu_ouster_sub;
+        //ros::Publisher          _pos_landmark_pub;
         
         void _init_node();
+        void _lidar_livox_callback(const livox_ros_driver::CustomMsg::ConstPtr &msgIn);
+        void _lidar_ouster_callback(const sensor_msgs::PointCloud2::ConstPtr &msgIn);
+        void _imu_ouster_callback(const sensor_msgs::Imu::ConstPtr &msgIn);
+        void _imu_vectornav_callback(const sensor_msgs::Imu::ConstPtr &msgIn);
 };
