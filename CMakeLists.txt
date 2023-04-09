@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 3.1.2)
 project(forest_slam)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++11)
+set(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_CXX_FLAGS "-std=c++17 -Wfatal-errors")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
