@@ -17,7 +17,6 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   nav_msgs
   message_generation
-  livox_ros_driver
   pcl_conversions
   pcl_ros
 )
