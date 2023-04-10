@@ -9,7 +9,7 @@
     <param name="/use_sim_time" value="true" />
 
     <node required="true" pkg="rosbag" type="play" name="rosbag_player"
-        args="--clock $(arg bag_file) -r 1.0 -s $(arg start_time)"
+        args="--clock $(arg bag_file) -r 0.4 -s $(arg start_time)"
         launch-prefix="bash -c 'sleep 1; $0 $@' "/>
 
     <!-- Run the lidar correction node -->
