@@ -38,7 +38,11 @@ void SlamNode::_init_node()
 
 void SlamNode::_lidar_livox_callback(const livox_ros_driver::CustomMsg::ConstPtr &msgIn)
 {
-    
+    // Not finished, currently need to change time conversion (fails as 
+    // "Time is out of dual 32-bit range")
+    // However, instead working with Ouster data for now
+
+    /*
     // Lock mutex for multi-thread
     _lidar_livox_mtx.lock();
 
@@ -61,6 +65,7 @@ void SlamNode::_lidar_livox_callback(const livox_ros_driver::CustomMsg::ConstPtr
     // Publish corrected cloud
     sensor_msgs::PointCloud2 tempCloud;
     pcl::toROSMsg(cloud, tempCloud);
+    ROS_INFO("%ld", msgIn->timebase);
     tempCloud.header.stamp = ros::Time(msgIn->timebase);
     tempCloud.header.frame_id = "world";
     _lidar_livox_pub.publish(tempCloud);
@@ -68,7 +73,7 @@ void SlamNode::_lidar_livox_callback(const livox_ros_driver::CustomMsg::ConstPtr
     // Unlock mutex for multi-thread
     _lidar_livox_mtx.unlock();
     
-            
+    */
 }
 
 void SlamNode::_lidar_ouster_callback(const sensor_msgs::PointCloud2::ConstPtr &msgIn){}
