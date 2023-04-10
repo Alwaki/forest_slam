@@ -5,7 +5,7 @@
  */
 
 #include "SlamNode.h"
-#include "GraphOptimizer.h"
+//#include "GraphOptimizer.h"
 //#include "FeatureEstimator.h"
 
 SlamNode::SlamNode():
