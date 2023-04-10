@@ -9,10 +9,24 @@
     <param name="/use_sim_time" value="true" />
 
     <node required="true" pkg="rosbag" type="play" name="rosbag_player"
-        args="--clock $(arg bag_file) -r 0.5 -s $(arg start_time)"
+        args="--clock $(arg bag_file) -r 1.0 -s $(arg start_time)"
         launch-prefix="bash -c 'sleep 1; $0 $@' "/>
 
     <!-- Run the lidar correction node -->
-      <node pkg="forest_slam" type="forest_slam_node" name="slam_node"
-       respawn="false" output="screen" required="true"> </node>
+    <node pkg="forest_slam" type="forest_slam_node" name="slam_node"
+    respawn="false" output="screen" required="true"> </node>
+
+    <!-- Setup static transform between sensors -->      
+    <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_ousterLidar2ousterIMU" 
+    args="0.0 0.0 0.0 0 0 0 1 os_imu os_sensor" />
+    <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_vectornav2ouster" 
+    args="0.0 0.0 1.0 0 0 0 1 vectornav os_imu" />
+
+    <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_temporary" 
+    args="0.0 0.0 1.0 0 0 0 1 map vectornav" />
+
+    <!--- Run Rviz-->
+    <node pkg="rviz" type="rviz" name="rviz" respawn="true" output="log" 
+        args="-d $(find forest_slam)/launch/launch.rviz" />
+
 </launch>
