@@ -9,7 +9,7 @@
     <param name="/use_sim_time" value="true" />
 
     <node required="true" pkg="rosbag" type="play" name="rosbag_player"
-        args="--clock $(arg bag_file) -r 0.4 -s $(arg start_time)"
+        args="--clock $(arg bag_file) -r 1.0 -s $(arg start_time)"
         launch-prefix="bash -c 'sleep 1; $0 $@' "/>
 
     <!-- Run the lidar correction node -->
@@ -20,10 +20,12 @@
     <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_ousterLidar2ousterIMU" 
     args="0.0 0.0 0.0 0 0 0 1 os_imu os_sensor" />
     <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_vectornav2ouster" 
-    args="0.0 0.0 1.0 0 0 0 1 vectornav os_imu" />
+    args="0.0 0.0 0.1 0 0 0 1 vectornav os_imu" />
+    <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_baseLink2vectornav" 
+    args="0.0 0.0 0.0 0 0 0 1 base_link vectornav" />
 
     <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_temporary" 
-    args="0.0 0.0 1.0 0 0 0 1 map vectornav" />
+    args="0.0 0.0 1.9 0 0 0 1 map base_link" />
 
     <!--- Run Rviz-->
     <node pkg="rviz" type="rviz" name="rviz" respawn="true" output="log" 
