@@ -2,7 +2,7 @@
 
     <!-- Forest dataset -->
     <arg  name="bag_file"  
-    default="/home/alwaki/Downloads/tmn__2023-02-13-12-27-05.bag"/> 
+    default="/home/alwaki/Downloads/plot1korsnas.bag"/> 
     <arg name="start_time" default="0"/>
 
     <!-- Play the bag file -->
@@ -16,16 +16,14 @@
     <node pkg="forest_slam" type="forest_slam_node" name="slam_node"
     respawn="false" output="screen" required="true"> </node>
 
+
     <!-- Setup static transform between sensors -->      
     <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_ousterLidar2ousterIMU" 
     args="0.0 0.0 0.0 0 0 0 1 os_imu os_sensor" />
     <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_vectornav2ouster" 
     args="0.0 0.0 0.1 0 0 0 1 vectornav os_imu" />
     <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_baseLink2vectornav" 
-    args="0.0 0.0 0.0 0 0 0 1 base_link vectornav" />
-
-    <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_temporary" 
-    args="0.0 0.0 1.9 0 0 0 1 map base_link" />
+    args="0.0 0.0 1.9 0 0 0 1 base_link vectornav" />
 
     <!--- Run Rviz-->
     <node pkg="rviz" type="rviz" name="rviz" respawn="true" output="log" 

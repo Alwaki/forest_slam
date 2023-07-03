@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   pcl_conversions
   pcl_ros
+  tf
 )
 
 ## System dependencies are found with CMake's conventions
@@ -124,6 +125,7 @@ catkin_package(
    nav_msgs
    geometry_msgs
    sensor_msgs
+   tf
 #  DEPENDS system_lib
 )
 

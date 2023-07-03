@@ -1,7 +1,8 @@
 /**
- * @file SlamNode.cpp
- * @brief ROS interface node to handle incoming data and run all SLAM functionality
- * @author Alexander Wallén Kiessling
+ * @file    SlamNode.cpp
+ * @brief   ROS interface node to handle incoming data and run all SLAM functionality
+ *          for documentation, see header files.
+ * @author  Alexander Wallén Kiessling
  */
 
 #include "SlamNode.h"
@@ -15,17 +16,10 @@ SlamNode::~SlamNode() = default;
 
 void SlamNode::_init_node()
 {
-    // Set paramaters
-    _icp.setMaxCorrespondenceDistance (0.05);
-    _icp.setMaximumIterations (50);
-    _icp.setTransformationEpsilon (1e-8);
-    _icp.setEuclideanFitnessEpsilon (1);
-
     // Initialize necessary variables
-    _prev_cloud_flag = 0;
-    _total_odom.x = 0;
-    _total_odom.y = 0;
-    _total_odom.z = 0;
+    _imu_counter = 0;
+    _current_pos.x = 0;
+    _current_pos.y = 0;
 
     // Setup subscribers and publishers
     _lidar_ouster_sub  = _nh.subscribe<sensor_msgs::PointCloud2>
@@ -40,17 +34,7 @@ void SlamNode::_init_node()
                                 ("/os_cloud_node/imu", 10, &SlamNode::_imu_ouster_callback,
                                  this, ros::TransportHints().tcpNoDelay(true));
 
-    _icp_odom_sub  = _nh.subscribe<sensor_msgs::PointCloud2>
-                                ("/os_cloud_node/points", 10, &SlamNode::_lidar_odom_calculate,
-                                 this, ros::TransportHints().tcpNoDelay(true));
-
-    _dynamic_transformer_sub  = _nh.subscribe<geometry_msgs::PointStamped>
-                                ("/icp/transform", 10, &SlamNode::_dynamic_transformer,
-                                 this, ros::TransportHints().tcpNoDelay(true));
-
-    _lidar_ouster_filtered_pub = _nh.advertise<sensor_msgs::PointCloud2>("/os_cloud_node/points_filtered", 10);
-
-    _icp_odom_pub = _nh.advertise<geometry_msgs::PointStamped>("/icp/transform", 10);
+    _lidar_ouster_filtered_pub  = _nh.advertise<sensor_msgs::PointCloud2>("/os_cloud_node/points_filtered", 10);
 
 }
 
@@ -60,7 +44,7 @@ void SlamNode::_lidar_ouster_callback(const sensor_msgs::PointCloud2::ConstPtr &
     1. Trim the point cloud height wise and distance wise (or somehow segment ground away)
     2. Publish trimmed point cloud for feature extraction and lidar odometry calculation
     */
-
+    
     // Change to PCL format
     pcl::PCLPointCloud2::Ptr pcl_cloud (new pcl::PCLPointCloud2 ());
     pcl_conversions::toPCL(*msgIn, *pcl_cloud);
@@ -74,18 +58,102 @@ void SlamNode::_lidar_ouster_callback(const sensor_msgs::PointCloud2::ConstPtr &
 
     // Passthrough filter
     pcl::PCLPointCloud2::Ptr pcl_pass (new pcl::PCLPointCloud2 ());
-    pcl::PassThrough<pcl::PCLPointCloud2> pass;
-    pass.setInputCloud (pcl_voxel);
-    pass.setFilterFieldName ("z");
-    pass.setFilterLimits (-2.0, 2.5);
-    pass.filter (*pcl_pass);
+    pcl::PassThrough<pcl::PCLPointCloud2> pass_z;
+    pass_z.setInputCloud (pcl_voxel);
+    pass_z.setFilterFieldName ("z");
+    pass_z.setFilterLimits (-1, 2);
+    pass_z.filter (*pcl_pass);
+    pcl::PassThrough<pcl::PCLPointCloud2> pass_x;
+    pass_x.setInputCloud (pcl_pass);
+    pass_x.setFilterFieldName ("x");
+    pass_x.setFilterLimits (-10, 10);
+    pass_x.filter (*pcl_pass);
+    pcl::PassThrough<pcl::PCLPointCloud2> pass_y;
+    pass_y.setInputCloud (pcl_pass);
+    pass_y.setFilterFieldName ("y");
+    pass_y.setFilterLimits (-10, 10);
+    pass_y.filter (*pcl_pass);
+
+    // Convert back to ROS and transform to map frame
+    std::string target = "map";
+    sensor_msgs::PointCloud2 ros_cloud, map_cloud;
+    pcl_conversions::moveFromPCL(*pcl_pass, ros_cloud);
+    pcl_ros::transformPointCloud(target, ros_cloud, map_cloud, _tf_listener);
 
     // Publish cloud
-    _lidar_ouster_filtered_pub.publish(*pcl_pass);
-
-
+    _lidar_ouster_filtered_pub.publish(map_cloud);
 }
 
+void SlamNode::_lidar_feature_extraction(const pcl::PointCloud<PointXYZIT>::ConstPtr &msgIn)
+{
+    /*
+    1. Extract landmark features from trimmed point cloud
+    2. Pass these landmarks to optimizer
+    */
+}
+
+
+void SlamNode::_imu_ouster_callback(const sensor_msgs::Imu::ConstPtr &msgIn)
+{
+    /*
+    1. 
+    
+    */
+}
+
+void SlamNode::_imu_vectornav_callback(const sensor_msgs::Imu::ConstPtr &msgIn)
+{
+    if(_imu_counter == 0)
+    {
+        _prev_time = msgIn->header.stamp;
+    }
+    else
+    {
+        ros::Duration dt_dur = msgIn->header.stamp - _prev_time;
+        double dt = dt_dur.toSec();
+        _prev_time = msgIn->header.stamp;
+        tf::Quaternion q(msgIn->orientation.x, msgIn->orientation.y,
+                         msgIn->orientation.z, msgIn->orientation.w);
+        tf::Matrix3x3 m(q);
+        double roll, pitch, yaw;
+        m.getRPY(roll, pitch, yaw);
+        if(_imu_counter > 5200 && _imu_counter < 45200)
+        {
+            _current_pos.x += cos(yaw)*0.5*dt;
+            _current_pos.y += sin(yaw)*0.5*dt;
+        }
+        
+
+        geometry_msgs::TransformStamped transform;
+        transform.transform.rotation = msgIn->orientation;
+        transform.transform.translation.x = _current_pos.x;
+        transform.transform.translation.y = _current_pos.y;
+        transform.transform.translation.z = 0;
+        transform.header.stamp = msgIn->header.stamp;
+        transform.child_frame_id = "base_link";
+        transform.header.frame_id = "map";
+        _dynamic_broadcaster.sendTransform(transform);
+    }
+    _imu_counter++;
+}
+
+int main(int argc, char **argv)
+{
+    ros::init(argc, argv, "slam_node");
+    ros::NodeHandle nh("~");
+
+    ROS_INFO("Started SLAM Node!");
+
+    SlamNode node;
+    ros::AsyncSpinner spinner(0);
+    spinner.start();
+    //node.node_thread();
+    ros::waitForShutdown();
+}
+
+
+
+/*
 void SlamNode::_lidar_odom_calculate(const sensor_msgs::PointCloud2::ConstPtr &msgIn)
 {
     // Downsample cloud and convert to ICP compatible format
@@ -123,63 +191,6 @@ void SlamNode::_lidar_odom_calculate(const sensor_msgs::PointCloud2::ConstPtr &m
     _prev_cloud = icp_cloud;
     _prev_cloud_flag = 1;
 }
-
-void SlamNode::_dynamic_transformer(const geometry_msgs::PointStamped::ConstPtr &msgIn)
-{
-    geometry_msgs::TransformStamped transform;
-    transform.transform.rotation = _current_rot;
-    _total_odom.x += msgIn->point.x;
-    _total_odom.y += msgIn->point.y;
-    _total_odom.z += msgIn->point.z;
-
-    // Set translation transform of drone from POS message
-    transform.transform.translation.x = _total_odom.x;
-    transform.transform.translation.y = _total_odom.y;
-    transform.transform.translation.z = _total_odom.z;
-
-    // Publish pose transform of drone
-    transform.header.stamp = msgIn->header.stamp;
-    transform.child_frame_id = "base_link";
-    transform.header.frame_id = "map";
-    _dynamic_broadcaster.sendTransform(transform);
-}
-
-void SlamNode::_lidar_feature_extraction(const pcl::PointCloud<PointXYZIT>::ConstPtr &msgIn)
-{
-    /*
-    1. Extract landmark features from trimmed point cloud
-    2. Pass these landmarks to optimizer
-    */
-}
-
-
-void SlamNode::_imu_ouster_callback(const sensor_msgs::Imu::ConstPtr &msgIn)
-{
-    /*
-    1. 
-    
-    */
-}
-
-void SlamNode::_imu_vectornav_callback(const sensor_msgs::Imu::ConstPtr &msgIn)
-{
-    _current_rot = msgIn->orientation;
-}
-
-int main(int argc, char **argv)
-{
-    ros::init(argc, argv, "slam_node");
-    ros::NodeHandle nh("~");
-
-    ROS_INFO("Started SLAM Node!");
-
-    SlamNode node;
-    ros::AsyncSpinner spinner(0);
-    spinner.start();
-    //node.node_thread();
-    ros::waitForShutdown();
-}
-
-
+*/
 
 

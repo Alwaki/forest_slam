@@ -14,12 +14,14 @@
 #include <tf/LinearMath/Quaternion.h>
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
+#include <tf2_sensor_msgs/tf2_sensor_msgs.h>
 
 #include <ros/ros.h>
 #include <pcl/point_cloud.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <pcl_ros/transforms.h>
 #include <pcl/filters/passthrough.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/registration/icp.h>
@@ -99,8 +101,11 @@ class SlamNode
 
         pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> _icp;
 
-        geometry_msgs::Point                    _total_odom;
-        geometry_msgs::Quaternion               _current_rot;
+        geometry_msgs::Vector3                    _current_pos;
+        geometry_msgs::Quaternion                 _current_rot;
+        geometry_msgs::TransformStamped           _current_transform;
+        ros::Time                                 _prev_time;
+        uint32_t                                  _imu_counter;
 
         tf::TransformListener                   _tf_listener;
         tf2_ros::TransformBroadcaster           _dynamic_broadcaster;
@@ -113,8 +118,8 @@ class SlamNode
 
         void _init_node();
         void _lidar_ouster_callback(const sensor_msgs::PointCloud2::ConstPtr &msgIn);
-        void _lidar_odom_calculate(const sensor_msgs::PointCloud2::ConstPtr &msgIn);
-        void _dynamic_transformer(const geometry_msgs::PointStamped::ConstPtr &msgIn);
+        //void _lidar_odom_calculate(const sensor_msgs::PointCloud2::ConstPtr &msgIn);
+        //void _dynamic_transformer(const geometry_msgs::PointStamped::ConstPtr &msgIn);
         void _lidar_feature_extraction(const pcl::PointCloud<PointXYZIT>::ConstPtr &msgIn);
         void _imu_ouster_callback(const sensor_msgs::Imu::ConstPtr &msgIn);
         void _imu_vectornav_callback(const sensor_msgs::Imu::ConstPtr &msgIn);
