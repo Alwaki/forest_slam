@@ -50,35 +50,51 @@ void SlamNode::_lidar_ouster_callback(const sensor_msgs::PointCloud2::ConstPtr &
     pcl_conversions::toPCL(*msgIn, *pcl_cloud);
 
     // Downsample cloud
+    /*
     pcl::PCLPointCloud2::Ptr pcl_voxel (new pcl::PCLPointCloud2 ());
     pcl::VoxelGrid<pcl::PCLPointCloud2> voxel_grid;
     voxel_grid.setInputCloud(pcl_cloud);
-    voxel_grid.setLeafSize (0.15f, 0.15f, 0.15f);
-    voxel_grid.filter (*pcl_voxel);
+    voxel_grid.setLeafSize(0.25f, 0.25f, 0.05f);
+    voxel_grid.filter(*pcl_voxel);
+    */
 
     // Passthrough filter
     pcl::PCLPointCloud2::Ptr pcl_pass (new pcl::PCLPointCloud2 ());
     pcl::PassThrough<pcl::PCLPointCloud2> pass_z;
-    pass_z.setInputCloud (pcl_voxel);
-    pass_z.setFilterFieldName ("z");
-    pass_z.setFilterLimits (-1, 2);
-    pass_z.filter (*pcl_pass);
+    pass_z.setInputCloud(pcl_cloud);
+    pass_z.setFilterFieldName("z");
+    pass_z.setFilterLimits(-1, 4);
+    pass_z.filter(*pcl_pass);
+
+    /*
     pcl::PassThrough<pcl::PCLPointCloud2> pass_x;
     pass_x.setInputCloud (pcl_pass);
     pass_x.setFilterFieldName ("x");
-    pass_x.setFilterLimits (-10, 10);
+    pass_x.setFilterLimits (_current_pos.x-10, _current_pos.x+10);
     pass_x.filter (*pcl_pass);
     pcl::PassThrough<pcl::PCLPointCloud2> pass_y;
     pass_y.setInputCloud (pcl_pass);
     pass_y.setFilterFieldName ("y");
-    pass_y.setFilterLimits (-10, 10);
+    pass_y.setFilterLimits (_current_pos.y-10, _current_pos.y+10);
     pass_y.filter (*pcl_pass);
+    */
+    
+    // Outlier removal
+    //pcl::PCLPointCloud2::Ptr pcl_filtered (new pcl::PCLPointCloud2 ());
+    //pcl::StatisticalOutlierRemoval<pcl::PCLPointCloud2> sor;
+    //sor.setInputCloud(pcl_pass);
+    //sor.setMeanK(2);
+    //sor.setStddevMulThresh(5);
+    //sor.filter(*pcl_filtered);
+    
 
     // Convert back to ROS and transform to map frame
     std::string target = "map";
     sensor_msgs::PointCloud2 ros_cloud, map_cloud;
     pcl_conversions::moveFromPCL(*pcl_pass, ros_cloud);
     pcl_ros::transformPointCloud(target, ros_cloud, map_cloud, _tf_listener);
+    map_cloud.header.stamp = msgIn->header.stamp;
+    map_cloud.header.frame_id = "map";
 
     // Publish cloud
     _lidar_ouster_filtered_pub.publish(map_cloud);
@@ -117,7 +133,7 @@ void SlamNode::_imu_vectornav_callback(const sensor_msgs::Imu::ConstPtr &msgIn)
         tf::Matrix3x3 m(q);
         double roll, pitch, yaw;
         m.getRPY(roll, pitch, yaw);
-        if(_imu_counter > 5200 && _imu_counter < 45200)
+        if(_imu_counter > 5200 && _imu_counter < 44200)
         {
             _current_pos.x += cos(yaw)*0.5*dt;
             _current_pos.y += sin(yaw)*0.5*dt;

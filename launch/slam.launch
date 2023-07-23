@@ -18,10 +18,8 @@
 
 
     <!-- Setup static transform between sensors -->      
-    <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_ousterLidar2ousterIMU" 
-    args="0.0 0.0 0.0 0 0 0 1 os_imu os_sensor" />
     <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_vectornav2ouster" 
-    args="0.0 0.0 0.1 0 0 0 1 vectornav os_imu" />
+    args="0.0 0.0 0.1 1 0 0 0 vectornav os_sensor" />
     <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_baseLink2vectornav" 
     args="0.0 0.0 1.9 0 0 0 1 base_link vectornav" />
 

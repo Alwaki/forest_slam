@@ -131,8 +131,6 @@ Visualization Manager:
           Value: true
         map:
           Value: true
-        odom:
-          Value: true
         os_imu:
           Value: true
         os_sensor:
@@ -147,12 +145,11 @@ Visualization Manager:
       Show Names: true
       Tree:
         map:
-          odom:
-            base_link:
-              vectornav:
-                os_imu:
-                  os_sensor:
-                    {}
+          base_link:
+            vectornav:
+              os_imu:
+                os_sensor:
+                  {}
       Update Interval: 0
       Value: true
   Enabled: true
@@ -183,7 +180,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
-      Distance: 18.67481803894043
+      Distance: 29.0478572845459
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -199,9 +196,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.635396420955658
+      Pitch: 0.06039617210626602
       Target Frame: <Fixed Frame>
-      Yaw: 3.2853808403015137
+      Yaw: 0.9703810214996338
     Saved: ~
 Window Geometry:
   Displays:

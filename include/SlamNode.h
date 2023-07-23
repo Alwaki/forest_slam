@@ -25,6 +25,8 @@
 #include <pcl/filters/passthrough.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/registration/icp.h>
+#include <pcl/filters/statistical_outlier_removal.h>
+#include <pcl/filters/radius_outlier_removal.h>
 #include "sensor_msgs/Imu.h"
 #include "sensor_msgs/PointCloud2.h"
 #include "geometry_msgs/PointStamped.h"
@@ -92,6 +94,7 @@ class SlamNode
         ros::Subscriber                 _icp_odom_sub;
         ros::Subscriber                 _dynamic_transformer_sub;
         ros::Publisher                  _lidar_ouster_filtered_pub;
+        ros::Publisher                  _lidar_ouster_test_pub;
         ros::Publisher                  _icp_odom_pub;
 
 
@@ -123,6 +126,7 @@ class SlamNode
         void _lidar_feature_extraction(const pcl::PointCloud<PointXYZIT>::ConstPtr &msgIn);
         void _imu_ouster_callback(const sensor_msgs::Imu::ConstPtr &msgIn);
         void _imu_vectornav_callback(const sensor_msgs::Imu::ConstPtr &msgIn);
+        Eigen::Matrix4f transform2Matrix(const tf::StampedTransform& trans);
 
         /*
         void _add_landmark(const gtsam::Symbol::ConstPtr &landmarkMsg);
