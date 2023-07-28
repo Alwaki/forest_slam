@@ -12,7 +12,7 @@
         args="--clock $(arg bag_file) -r 1.0 -s $(arg start_time)"
         launch-prefix="bash -c 'sleep 1; $0 $@' "/>
 
-    <!-- Run the lidar correction node -->
+    <!-- Run the SLAM node -->
     <node pkg="forest_slam" type="forest_slam_node" name="slam_node"
     respawn="false" output="screen" required="true"> </node>
 
@@ -22,6 +22,10 @@
     args="0.0 0.0 0.1 1 0 0 0 vectornav os_sensor" />
     <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_baseLink2vectornav" 
     args="0.0 0.0 1.9 0 0 0 1 base_link vectornav" />
+
+    <!-- Run feature extraction node -->
+    <node pkg="forest_slam" type="feature_node.py" name="feature_node"
+    respawn="false" output="screen" required="true"> </node>
 
     <!--- Run Rviz-->
     <node pkg="rviz" type="rviz" name="rviz" respawn="true" output="log" 
