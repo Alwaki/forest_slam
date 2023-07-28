@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 from sklearn.cluster import DBSCAN
 from sklearn.cluster import HDBSCAN
 import numpy as np

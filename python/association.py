@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 from LandmarkClass import *
 from util import *
 from itertools import compress
