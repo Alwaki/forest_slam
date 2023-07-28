@@ -131,8 +131,6 @@ Visualization Manager:
           Value: true
         map:
           Value: true
-        os_imu:
-          Value: true
         os_sensor:
           Value: true
         vectornav:
@@ -147,10 +145,17 @@ Visualization Manager:
         map:
           base_link:
             vectornav:
-              os_imu:
-                os_sensor:
-                  {}
+              os_sensor:
+                {}
       Update Interval: 0
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /feature_node/extracted_pos
+      Name: MarkerArray
+      Namespaces:
+        "": true
+      Queue Size: 100
       Value: true
   Enabled: true
   Global Options:
@@ -180,7 +185,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
-      Distance: 29.0478572845459
+      Distance: 19.79530143737793
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -188,17 +193,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.12833476066589355
-        Y: -0.15482297539710999
-        Z: -4.76837158203125e-07
+        X: 0.23342585563659668
+        Y: 1.8188527822494507
+        Z: -1.430511474609375e-06
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.06039617210626602
+      Pitch: 0.890396237373352
       Target Frame: <Fixed Frame>
-      Yaw: 0.9703810214996338
+      Yaw: 5.883565902709961
     Saved: ~
 Window Geometry:
   Displays:
