@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   sensor_msgs
   geometry_msgs
+  visualization_msgs
   nav_msgs
   message_generation
   pcl_conversions
@@ -84,6 +85,7 @@ generate_messages(
   nav_msgs
   sensor_msgs
   geometry_msgs
+  visualization_msgs
 )
 
 ################################################
@@ -124,6 +126,7 @@ catkin_package(
    std_msgs
    nav_msgs
    geometry_msgs
+   visualization_msgs
    sensor_msgs
    tf
 #  DEPENDS system_lib
