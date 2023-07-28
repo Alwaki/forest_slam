@@ -46,8 +46,8 @@ void SlamNode::_lidar_ouster_callback(const sensor_msgs::PointCloud2::ConstPtr &
     */
     
     // Change to PCL format
-    pcl::PCLPointCloud2::Ptr pcl_cloud (new pcl::PCLPointCloud2 ());
-    pcl_conversions::toPCL(*msgIn, *pcl_cloud);
+    //pcl::PCLPointCloud2::Ptr pcl_cloud (new pcl::PCLPointCloud2 ());
+    //pcl_conversions::toPCL(*msgIn, *pcl_cloud);
 
     // Downsample cloud
     /*
@@ -59,12 +59,12 @@ void SlamNode::_lidar_ouster_callback(const sensor_msgs::PointCloud2::ConstPtr &
     */
 
     // Passthrough filter
-    pcl::PCLPointCloud2::Ptr pcl_pass (new pcl::PCLPointCloud2 ());
-    pcl::PassThrough<pcl::PCLPointCloud2> pass_z;
-    pass_z.setInputCloud(pcl_cloud);
-    pass_z.setFilterFieldName("z");
-    pass_z.setFilterLimits(-1, 4);
-    pass_z.filter(*pcl_pass);
+    //pcl::PCLPointCloud2::Ptr pcl_pass (new pcl::PCLPointCloud2 ());
+    //pcl::PassThrough<pcl::PCLPointCloud2> pass_z;
+    //pass_z.setInputCloud(pcl_cloud);
+    //pass_z.setFilterFieldName("z");
+    //pass_z.setFilterLimits(-1, 4);
+    //pass_z.filter(*pcl_pass);
 
     /*
     pcl::PassThrough<pcl::PCLPointCloud2> pass_x;
@@ -91,8 +91,8 @@ void SlamNode::_lidar_ouster_callback(const sensor_msgs::PointCloud2::ConstPtr &
     // Convert back to ROS and transform to map frame
     std::string target = "map";
     sensor_msgs::PointCloud2 ros_cloud, map_cloud;
-    pcl_conversions::moveFromPCL(*pcl_pass, ros_cloud);
-    pcl_ros::transformPointCloud(target, ros_cloud, map_cloud, _tf_listener);
+    //pcl_conversions::moveFromPCL(*pcl_pass, ros_cloud);
+    pcl_ros::transformPointCloud(target, *msgIn, map_cloud, _tf_listener);
     map_cloud.header.stamp = msgIn->header.stamp;
     map_cloud.header.frame_id = "map";
 
