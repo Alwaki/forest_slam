@@ -14,7 +14,7 @@ class Landmark:
         mean = np.array(mean)
         cov = np.array([[cov[0], 0],[0, cov[1]]]) 
         self._mean = (self._n*self._mean + mean)/(self._n+1.0)
-        self._cov = self._n*self._cov/(self._n+1) + cov*(1+min(1.0, 5*factor))/(self._n+1.0)
+        self._cov = self._n*self._cov/(self._n+1) + cov*(1+min(1.0, abs(5*factor)))/(self._n+1.0)
         self._n += 1.0
 
     def calculateEuclidean(self, mean, cov):
@@ -37,8 +37,8 @@ class Landmark:
 
         temp = np.matmul(mu_d.T, s_tot_inv)
         temp2 = np.matmul(temp, mu_d)
-
-        return 0.125 * temp2 + 0.5 * np.log(dt/(np.sqrt(d1*d2)))
+        
+        return 0.125 * temp2 + 0.5 * np.log(dt/(np.sqrt(max(1E-10, d1*d2))))
 
     
     def getPos(self):

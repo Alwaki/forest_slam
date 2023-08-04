@@ -6,6 +6,19 @@
 
 #pragma once
 
+// ROS library
+#include <ros/ros.h>
+
+// ROS Messages
+#include "sensor_msgs/Imu.h"
+#include "sensor_msgs/PointCloud2.h"
+#include "geometry_msgs/PointStamped.h"
+#include "geometry_msgs/PoseStamped.h"
+#include "geometry_msgs/Point.h"
+#include "geometry_msgs/Quaternion.h"
+#include "geometry_msgs/TransformStamped.h"
+
+// GTSAM library
 #include "gtsam/geometry/Pose2.h"
 #include "gtsam/geometry/Point2.h"
 #include "gtsam/inference/Symbol.h"
@@ -21,19 +34,26 @@
 #include "Eigen/Dense"
 #include "random"
 
+// C++ libraries
+#include <deque>
+#include <thread>
+#include <string>
+#include <stdio.h>
+
 class GraphOptimizer
 {
     public:
         GraphOptimizer();
         virtual ~GraphOptimizer();
-        void add_landmark(const gtsam::Symbol::ConstPtr &landmarkMsg);
-        void add_pose(const gtsam::Symbol::ConstPtr &poseMsg);
-        void optimize();
         void get_map();
 
     private:
+        void add_landmark(const gtsam::Symbol landmarkMsg);
+        void add_pose(const gtsam::Symbol poseMsg);
+        void optimize();
+        
+        ros::NodeHandle                 _nh;
         gtsam::NonlinearFactorGraph     _graph; 
         std::vector<gtsam::Symbol>      _pose_symbols; 
         std::vector<gtsam::Symbol>      _landmark_symbols;
-    
 };

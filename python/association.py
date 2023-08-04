@@ -4,7 +4,6 @@ from LandmarkClass import *
 from util import *
 from itertools import compress
 
-
 def associate_slices(all_means, all_cov, association_threshold, max_uncertainty, method):
     landmarks = []
     # First slice 
@@ -61,7 +60,10 @@ def mask_landmarks(landmarks, slice_count, threshold):
         if landmark.getObsCount() < threshold*slice_count:
             mask.append(False)
         else:
-            mask.append(True)
+            if landmark.getObsCount() > slice_count:
+                mask.append(False)
+            else:
+                mask.append(True)
 
     landmarks = list(compress(landmarks, mask))
     return landmarks

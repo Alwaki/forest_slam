@@ -1,20 +1,18 @@
 /**
- * @file    SlamNode.cpp
- * @brief   ROS interface node to handle incoming data and run all SLAM functionality
- *          for documentation, see header files.
+ * @file    Preprocess.cpp
+ * @brief   ROS interface node to handle incoming data and process it
  * @author  Alexander Wallén Kiessling
  */
 
-#include "SlamNode.h"
-//#include "FeatureEstimator.h"
+#include "Preprocess.h"
 
-SlamNode::SlamNode():
+Preprocess::Preprocess():
     _nh("~")
     {_init_node();}
 
-SlamNode::~SlamNode() = default;
+Preprocess::~Preprocess() = default;
 
-void SlamNode::_init_node()
+void Preprocess::_init_node()
 {
     // Initialize necessary variables
     _imu_counter = 0;
@@ -23,93 +21,80 @@ void SlamNode::_init_node()
 
     // Setup subscribers and publishers
     _lidar_ouster_sub  = _nh.subscribe<sensor_msgs::PointCloud2>
-                                ("/os_cloud_node/points", 10, &SlamNode::_lidar_ouster_callback,
-                                 this, ros::TransportHints().tcpNoDelay(true));
+        ("/os_cloud_node/points", 10, &Preprocess::_lidar_ouster_callback,
+        this, ros::TransportHints().tcpNoDelay(true));
 
     _imu_vectornav_sub = _nh.subscribe<sensor_msgs::Imu>
-                                ("/vectornav/IMU", 10, &SlamNode::_imu_vectornav_callback,
-                                 this, ros::TransportHints().tcpNoDelay(true));
+        ("/vectornav/IMU", 10, &Preprocess::_imu_vectornav_callback,
+        this, ros::TransportHints().tcpNoDelay(true));
 
     _imu_ouster_sub    = _nh.subscribe<sensor_msgs::Imu>
-                                ("/os_cloud_node/imu", 10, &SlamNode::_imu_ouster_callback,
-                                 this, ros::TransportHints().tcpNoDelay(true));
+        ("/os_cloud_node/imu", 10, &Preprocess::_imu_ouster_callback,
+        this, ros::TransportHints().tcpNoDelay(true));
 
-    _lidar_ouster_filtered_pub  = _nh.advertise<sensor_msgs::PointCloud2>("/os_cloud_node/points_filtered", 10);
+    _lidar_ouster_filtered_pub  = _nh.advertise<sensor_msgs::PointCloud2>(
+        "/os_cloud_node/points_filtered", 1);
 
 }
 
-void SlamNode::_lidar_ouster_callback(const sensor_msgs::PointCloud2::ConstPtr &msgIn)
+void Preprocess::_lidar_ouster_callback(const sensor_msgs::PointCloud2::ConstPtr &msgIn)
 {
-    /*
-    1. Trim the point cloud height wise and distance wise (or somehow segment ground away)
-    2. Publish trimmed point cloud for feature extraction and lidar odometry calculation
-    */
-    
-    // Change to PCL format
-    //pcl::PCLPointCloud2::Ptr pcl_cloud (new pcl::PCLPointCloud2 ());
-    //pcl_conversions::toPCL(*msgIn, *pcl_cloud);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr filtered_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+    filtered_cloud->width = 0;
+    filtered_cloud->height = 1;
+    filtered_cloud->is_dense = false;
+    filtered_cloud->points.resize(filtered_cloud->width * filtered_cloud->height);
+    filtered_cloud->header.frame_id = msgIn->header.frame_id;
+    double dt = 0.1 / (msgIn->width*msgIn->height);
+    ros::Duration time_offset(dt);
+    for (sensor_msgs::PointCloud2ConstIterator<float> it(*msgIn, "x"); it != it.end(); ++it) {
+        // Check 
+        // 1. Point nonzero (zero points indicate invalid return value)
+        // 2. Point above ground height Z (and not too high!)
+        // 3. Point within rough 8m radius of XY
+        if(it[0] != 0 && it[1] != 0)
+        {
+        if(3.0 > it[2] &&  it[2] > -1.0)
+        {
+        float distance = it[0] * it[0] + it[1] * it[1];
+        if(distance < 36.0 && distance > 9.0)
+        {
+            auto time = msgIn->header.stamp + time_offset;
+            geometry_msgs::PointStamped p_in, p_out;
+            p_in.point.x = it[0];
+            p_in.point.y = it[1];
+            p_in.point.z = it[2];
+            p_in.header.stamp = time;
+            p_in.header.frame_id = msgIn->header.frame_id;
+            _tf_listener.waitForTransform(msgIn->header.frame_id, "map", time, ros::Duration(0.01));
+            _tf_listener.transformPoint("map", p_in, p_out);
+            pcl::PointXYZ pt;
+            pt.x = p_out.point.x;
+            pt.y = p_out.point.y;
+            pt.z = p_out.point.z;
+            filtered_cloud->points.push_back(pt);
+            filtered_cloud->width++;
+        }
+        }
+        }
+    }
 
-    // Downsample cloud
-    /*
-    pcl::PCLPointCloud2::Ptr pcl_voxel (new pcl::PCLPointCloud2 ());
-    pcl::VoxelGrid<pcl::PCLPointCloud2> voxel_grid;
-    voxel_grid.setInputCloud(pcl_cloud);
-    voxel_grid.setLeafSize(0.25f, 0.25f, 0.05f);
-    voxel_grid.filter(*pcl_voxel);
-    */
-
-    // Passthrough filter
-    //pcl::PCLPointCloud2::Ptr pcl_pass (new pcl::PCLPointCloud2 ());
-    //pcl::PassThrough<pcl::PCLPointCloud2> pass_z;
-    //pass_z.setInputCloud(pcl_cloud);
-    //pass_z.setFilterFieldName("z");
-    //pass_z.setFilterLimits(-1, 4);
-    //pass_z.filter(*pcl_pass);
-
-    /*
-    pcl::PassThrough<pcl::PCLPointCloud2> pass_x;
-    pass_x.setInputCloud (pcl_pass);
-    pass_x.setFilterFieldName ("x");
-    pass_x.setFilterLimits (_current_pos.x-10, _current_pos.x+10);
-    pass_x.filter (*pcl_pass);
-    pcl::PassThrough<pcl::PCLPointCloud2> pass_y;
-    pass_y.setInputCloud (pcl_pass);
-    pass_y.setFilterFieldName ("y");
-    pass_y.setFilterLimits (_current_pos.y-10, _current_pos.y+10);
-    pass_y.filter (*pcl_pass);
-    */
-    
-    // Outlier removal
-    //pcl::PCLPointCloud2::Ptr pcl_filtered (new pcl::PCLPointCloud2 ());
-    //pcl::StatisticalOutlierRemoval<pcl::PCLPointCloud2> sor;
-    //sor.setInputCloud(pcl_pass);
-    //sor.setMeanK(2);
-    //sor.setStddevMulThresh(5);
-    //sor.filter(*pcl_filtered);
-    
+    pcl::PCLPointCloud2 pcl_pc2;
+    pcl::toPCLPointCloud2(*filtered_cloud, pcl_pc2);
 
     // Convert back to ROS and transform to map frame
-    std::string target = "map";
-    sensor_msgs::PointCloud2 ros_cloud, map_cloud;
-    //pcl_conversions::moveFromPCL(*pcl_pass, ros_cloud);
-    pcl_ros::transformPointCloud(target, *msgIn, map_cloud, _tf_listener);
-    map_cloud.header.stamp = msgIn->header.stamp;
-    map_cloud.header.frame_id = "map";
+    //std::string target = "map";
+    sensor_msgs::PointCloud2 ros_cloud, map_frame_cloud;
+    pcl_conversions::moveFromPCL(pcl_pc2, map_frame_cloud);
+    //pcl_ros::transformPointCloud(target, *msgIn, map_cloud, _tf_listener);
+    map_frame_cloud.header.stamp = msgIn->header.stamp;
+    map_frame_cloud.header.frame_id = "map";
 
     // Publish cloud
-    _lidar_ouster_filtered_pub.publish(map_cloud);
+    _lidar_ouster_filtered_pub.publish(map_frame_cloud);
 }
 
-void SlamNode::_lidar_feature_extraction(const pcl::PointCloud<PointXYZIT>::ConstPtr &msgIn)
-{
-    /*
-    1. Extract landmark features from trimmed point cloud
-    2. Pass these landmarks to optimizer
-    */
-}
-
-
-void SlamNode::_imu_ouster_callback(const sensor_msgs::Imu::ConstPtr &msgIn)
+void Preprocess::_imu_ouster_callback(const sensor_msgs::Imu::ConstPtr &msgIn)
 {
     /*
     1. 
@@ -117,7 +102,7 @@ void SlamNode::_imu_ouster_callback(const sensor_msgs::Imu::ConstPtr &msgIn)
     */
 }
 
-void SlamNode::_imu_vectornav_callback(const sensor_msgs::Imu::ConstPtr &msgIn)
+void Preprocess::_imu_vectornav_callback(const sensor_msgs::Imu::ConstPtr &msgIn)
 {
     if(_imu_counter == 0)
     {
@@ -155,12 +140,12 @@ void SlamNode::_imu_vectornav_callback(const sensor_msgs::Imu::ConstPtr &msgIn)
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "slam_node");
+    ros::init(argc, argv, "preprocess_node");
     ros::NodeHandle nh("~");
 
-    ROS_INFO("Started SLAM Node!");
+    ROS_INFO("Started Preprocess Node!");
 
-    SlamNode node;
+    Preprocess node;
     ros::AsyncSpinner spinner(0);
     spinner.start();
     //node.node_thread();

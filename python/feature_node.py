@@ -1,34 +1,28 @@
 #!/usr/bin/python3
 
+# Custom modules
 from LandmarkClass import *
 from util import *
 from clustering import *
 from association import *
 from plotting import *
 
+# ROS imports
 import rospy
 from sensor_msgs.msg import PointCloud2, PointField
 import sensor_msgs.point_cloud2 as pc2
 from visualization_msgs.msg import Marker
 from visualization_msgs.msg import MarkerArray
-from std_msgs.msg import ColorRGBA
-from geometry_msgs.msg import Point
-from geometry_msgs.msg import Vector3
-from geometry_msgs.msg import PoseArray
-from geometry_msgs.msg import Pose
 
 # Parameters
-slice_count = 10
-slice_max_points = 20000
-sample_fraction = 0.01
-min_radius = 0.1
-cov_factor = 1
-eps = 0.1
-max_uncertainty = 0.8
+slice_count = 5
+min_points = 5
+epsilon = 0.2
+max_uncertainty = 0.6
 association_threshold = 0.5
-observation_threshold = 0.5
-downsample_size = 0.1
-outlier_neighbors = 100
+observation_threshold = 0.7
+downsample_size = 0.15
+outlier_neighbors = 80
 outlier_stdev = 0.2
 distance_metric = 2    
 
@@ -36,8 +30,8 @@ def feature_extract(pcl_msg):
 
     # Convert from PointCloud2 to numpy
     pc_generator = pc2.read_points(pcl_msg)
-    print(pcl_msg.width)
-    print(pcl_msg.height)
+    #print(pcl_msg.width)
+    #print(pcl_msg.height)
     pcl = np.zeros((pcl_msg.width * pcl_msg.height, 3))
     for i, point in enumerate(pc_generator):
         # point[0]: x position; comes as float32
@@ -49,21 +43,21 @@ def feature_extract(pcl_msg):
         # point[6]: height;     comes as float32
         pcl[i, :] = point[0:3]
 
-    # Simple ground filter
-    #filter = pcl[2,:] > -1
-
-    #pcl = pcl[filter]
-
     pcd = arr2pcd(pcl[:, 0], pcl[:, 1], pcl[:, 2])
     pcd = remove_outliers(pcd, outlier_neighbors, outlier_stdev)
     pcd = remove_outliers(pcd, outlier_neighbors, outlier_stdev)
     pcl = pcd2arr(pcd)
 
+    # Publish outlier filtered pointcloud for visualization
+    cloud_points = []
+    for xyz in pcl:
+        cloud_points.append(xyz) 
+    header = pcl_msg.header
+    scaled_polygon_pcl = pc2.create_cloud_xyz32(header, cloud_points)
+    filtered_cloud_pub.publish(scaled_polygon_pcl)
+
     # Cluster slices
-    all_means, all_cov = cluster_all(pcl, slice_count, 
-                                    slice_max_points, eps, 
-                                    sample_fraction, min_radius, 
-                                    cov_factor, max_uncertainty)
+    all_means, all_cov = cluster_all(pcl, slice_count, epsilon, min_points, max_uncertainty)
 
     # Create landmarks and associate them across slices
     landmarks = associate_slices(all_means, all_cov, 
@@ -89,7 +83,7 @@ def feature_extract(pcl_msg):
         landmark_marker.color.r = 0.0
         landmark_marker.color.g = 0.0
         landmark_marker.color.b = 1.0
-        landmark_marker.color.a = 0.8
+        landmark_marker.color.a = 0.7
         landmark_marker.pose.position.x = x
         landmark_marker.pose.position.y = y
         landmark_marker.pose.position.z = 0
@@ -97,6 +91,7 @@ def feature_extract(pcl_msg):
         landmark_marker.pose.orientation.y = 0
         landmark_marker.pose.orientation.z = 0
         landmark_marker.pose.orientation.w = 1
+        landmark_marker.lifetime = rospy.Duration(0.1)
         feature_list.markers.append(landmark_marker)
     feature_pos_pub.publish(feature_list)
 
@@ -108,18 +103,13 @@ if __name__=="__main__":
     rospy.init_node('feature_node', anonymous=True)
     cloud_sub = rospy.Subscriber("/os_cloud_node/points_filtered", 
                                  data_class=PointCloud2, callback=feature_extract, 
-                                 queue_size=10)
+                                 queue_size=1)
     feature_pos_pub = rospy.Publisher("feature_node/extracted_pos", 
-                                      data_class=MarkerArray, queue_size=10)
-    #marker_pub = rospy.Publisher("marker", Marker, queue_size=1)
+                                      data_class=MarkerArray, queue_size=1)
+    filtered_cloud_pub = rospy.Publisher("feature_node/points_outlier_filtered",
+                                         data_class=PointCloud2, queue_size=10)
     while not rospy.is_shutdown():
         rospy.spin()
-
-
-#pcl = extract_3D("data/cloud_cut.las")
-
-#landmarks = feature_extract(pcl)
-#plot_landmarks(landmarks, slice_count, 1)
 
 
 
