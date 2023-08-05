@@ -48,12 +48,17 @@ class GraphOptimizer
         void get_map();
 
     private:
-        void add_landmark(const gtsam::Symbol landmarkMsg);
-        void add_pose(const gtsam::Symbol poseMsg);
-        void optimize();
+        void _init();
+        void _add_landmark(const gtsam::Point2 landmarkMsg);
+        void _add_pose(const gtsam::Pose2 poseMsg);
+        void _optimize();
         
-        ros::NodeHandle                 _nh;
-        gtsam::NonlinearFactorGraph     _graph; 
-        std::vector<gtsam::Symbol>      _pose_symbols; 
-        std::vector<gtsam::Symbol>      _landmark_symbols;
+        ros::NodeHandle                          _nh;
+        gtsam::NonlinearFactorGraph              _graph; 
+        std::vector<gtsam::Symbol>               _pose_symbols; 
+        std::vector<gtsam::Symbol>               _landmark_symbols;
+        gtsam::noiseModel::Diagonal::shared_ptr  _priorNoise;
+        gtsam::noiseModel::Diagonal::shared_ptr  _odomNoise;
+        gtsam::noiseModel::Diagonal::shared_ptr  _rangeNoise;
+        gtsam::Values                            _initialEstimate;
 };
