@@ -39,7 +39,7 @@ def associate_slices(all_means, all_cov, association_threshold, max_uncertainty,
                         d_min = d
             # Existing landmark
             if d_min < association_threshold:
-                landmarks[ind_min].update(mean, cov, d_min)
+                landmarks[ind_min].update(mean, cov)
                 landmarks[ind_min].setObserved(True)
                 # Check if uncertainty has grown too large
                 test_cov = landmarks[ind_min].getCov()
