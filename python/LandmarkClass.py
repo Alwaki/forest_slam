@@ -10,11 +10,11 @@ class Landmark:
         self._n = 1.0
         self._observed = False
 
-    def update(self, mean, cov, factor):
+    def update(self, mean, cov):
         mean = np.array(mean)
         cov = np.array([[cov[0], 0],[0, cov[1]]]) 
         self._mean = (self._n*self._mean + mean)/(self._n+1.0)
-        self._cov = self._n*self._cov/(self._n+1) + cov*(1+min(1.0, abs(5*factor)))/(self._n+1.0)
+        self._cov = self._n*self._cov/(self._n+1) + cov/(self._n+1.0)
         self._n += 1.0
 
     def calculateEuclidean(self, mean, cov):
