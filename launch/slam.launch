@@ -16,6 +16,10 @@
     <node pkg="forest_slam" type="preprocess_node" name="preprocess_node"
     respawn="false" output="screen" required="true"> </node>
 
+    <!-- Run the estimation node -->
+    <node pkg="forest_slam" type="estimator_node" name="estimator_node"
+    respawn="false" output="screen" required="true"> </node>
+
     <!-- Run the optimizer node -->
     <node pkg="forest_slam" type="optimizer_node" name="optimizer_node"
     respawn="false" output="screen" required="true"> </node>
@@ -29,6 +33,10 @@
 
     <!-- Run feature extraction node -->
     <node pkg="forest_slam" type="feature_node.py" name="feature_node"
+    respawn="false" output="screen" required="true"> </node>
+
+    <!-- Run plotting node -->
+    <node pkg="forest_slam" type="plotting_node.py" name="plotting_node"
     respawn="false" output="screen" required="true"> </node>
 
     <!--- Run Rviz-->
