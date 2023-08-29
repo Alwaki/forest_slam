@@ -14,27 +14,13 @@ Preprocess::~Preprocess() = default;
 
 void Preprocess::_init_node()
 {
-    // Initialize necessary variables
-    _imu_counter = 0;
-    _current_pos.x = 0;
-    _current_pos.y = 0;
-
     // Setup subscribers and publishers
     _lidar_ouster_sub  = _nh.subscribe<sensor_msgs::PointCloud2>
         ("/os_cloud_node/points", 10, &Preprocess::_lidar_ouster_callback,
         this, ros::TransportHints().tcpNoDelay(true));
 
-    _imu_vectornav_sub = _nh.subscribe<sensor_msgs::Imu>
-        ("/vectornav/IMU", 10, &Preprocess::_imu_vectornav_callback,
-        this, ros::TransportHints().tcpNoDelay(true));
-
-    _imu_ouster_sub    = _nh.subscribe<sensor_msgs::Imu>
-        ("/os_cloud_node/imu", 10, &Preprocess::_imu_ouster_callback,
-        this, ros::TransportHints().tcpNoDelay(true));
-
     _lidar_ouster_filtered_pub  = _nh.advertise<sensor_msgs::PointCloud2>(
         "/os_cloud_node/points_filtered", 1);
-
 }
 
 void Preprocess::_lidar_ouster_callback(const sensor_msgs::PointCloud2::ConstPtr &msgIn)
@@ -51,13 +37,13 @@ void Preprocess::_lidar_ouster_callback(const sensor_msgs::PointCloud2::ConstPtr
         // Check 
         // 1. Point nonzero (zero points indicate invalid return value)
         // 2. Point above ground height Z (and not too high!)
-        // 3. Point within rough 8m radius of XY
+        // 3. Point within rough 7m radius of XY
         if(it[0] != 0 && it[1] != 0)
         {
         if(3.0 > it[2] &&  it[2] > -1.0)
         {
         float distance = it[0] * it[0] + it[1] * it[1];
-        if(distance < 36.0 && distance > 9.0)
+        if(distance < 49.0 && distance > 1)
         {
             auto time = msgIn->header.stamp + time_offset;
             geometry_msgs::PointStamped p_in, p_out;
@@ -92,50 +78,6 @@ void Preprocess::_lidar_ouster_callback(const sensor_msgs::PointCloud2::ConstPtr
 
     // Publish cloud
     _lidar_ouster_filtered_pub.publish(map_frame_cloud);
-}
-
-void Preprocess::_imu_ouster_callback(const sensor_msgs::Imu::ConstPtr &msgIn)
-{
-    /*
-    1. 
-    
-    */
-}
-
-void Preprocess::_imu_vectornav_callback(const sensor_msgs::Imu::ConstPtr &msgIn)
-{
-    if(_imu_counter == 0)
-    {
-        _prev_time = msgIn->header.stamp;
-    }
-    else
-    {
-        ros::Duration dt_dur = msgIn->header.stamp - _prev_time;
-        double dt = dt_dur.toSec();
-        _prev_time = msgIn->header.stamp;
-        tf::Quaternion q(msgIn->orientation.x, msgIn->orientation.y,
-                         msgIn->orientation.z, msgIn->orientation.w);
-        tf::Matrix3x3 m(q);
-        double roll, pitch, yaw;
-        m.getRPY(roll, pitch, yaw);
-        if(_imu_counter > 5200 && _imu_counter < 44200)
-        {
-            _current_pos.x += cos(yaw)*0.5*dt;
-            _current_pos.y += sin(yaw)*0.5*dt;
-        }
-        
-
-        geometry_msgs::TransformStamped transform;
-        transform.transform.rotation = msgIn->orientation;
-        transform.transform.translation.x = _current_pos.x;
-        transform.transform.translation.y = _current_pos.y;
-        transform.transform.translation.z = 0;
-        transform.header.stamp = msgIn->header.stamp;
-        transform.child_frame_id = "base_link";
-        transform.header.frame_id = "map";
-        _dynamic_broadcaster.sendTransform(transform);
-    }
-    _imu_counter++;
 }
 
 int main(int argc, char **argv)
@@ -192,6 +134,43 @@ void SlamNode::_lidar_odom_calculate(const sensor_msgs::PointCloud2::ConstPtr &m
     _prev_cloud = icp_cloud;
     _prev_cloud_flag = 1;
 }
+
+void Preprocess::_imu_vectornav_callback(const sensor_msgs::Imu::ConstPtr &msgIn)
+{
+    if(_imu_counter == 0)
+    {
+        _prev_time = msgIn->header.stamp;
+    }
+    else
+    {
+        ros::Duration dt_dur = msgIn->header.stamp - _prev_time;
+        double dt = dt_dur.toSec();
+        _prev_time = msgIn->header.stamp;
+        tf::Quaternion q(msgIn->orientation.x, msgIn->orientation.y,
+                         msgIn->orientation.z, msgIn->orientation.w);
+        tf::Matrix3x3 m(q);
+        double roll, pitch, yaw;
+        m.getRPY(roll, pitch, yaw);
+        if(_imu_counter > 5200 && _imu_counter < 44200)
+        {
+            _current_pos.x += cos(yaw)*0.5*dt;
+            _current_pos.y += sin(yaw)*0.5*dt;
+        }
+        
+
+        geometry_msgs::TransformStamped transform;
+        transform.transform.rotation = msgIn->orientation;
+        transform.transform.translation.x = _current_pos.x;
+        transform.transform.translation.y = _current_pos.y;
+        transform.transform.translation.z = 0;
+        transform.header.stamp = msgIn->header.stamp;
+        transform.child_frame_id = "base_link";
+        transform.header.frame_id = "map";
+        _dynamic_broadcaster.sendTransform(transform);
+    }
+    _imu_counter++;
+}
+
 */
 
 
