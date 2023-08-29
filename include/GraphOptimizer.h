@@ -53,12 +53,18 @@ class GraphOptimizer
         void _add_pose(const gtsam::Pose2 poseMsg);
         void _optimize();
         
+        double                                   _data_association_threshold;
+        double                                   _loop_closure_threshold;
+        std::mutex                               _symbol_mtx;
         ros::NodeHandle                          _nh;
         gtsam::NonlinearFactorGraph              _graph; 
         std::vector<gtsam::Symbol>               _pose_symbols; 
         std::vector<gtsam::Symbol>               _landmark_symbols;
+        std::map<gtsam::Symbol, gtsam::Pose2>    _abs_poses;
+        std::map<gtsam::Symbol, gtsam::Point2>   _abs_landmarks;
         gtsam::noiseModel::Diagonal::shared_ptr  _priorNoise;
         gtsam::noiseModel::Diagonal::shared_ptr  _odomNoise;
         gtsam::noiseModel::Diagonal::shared_ptr  _rangeNoise;
         gtsam::Values                            _initialEstimate;
+        
 };
