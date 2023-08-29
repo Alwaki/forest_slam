@@ -24,7 +24,7 @@ def associate_slices(all_means, all_cov, association_threshold, max_uncertainty,
             d_min = 100000
             ind_min = 0
             for ind, landmark in enumerate(landmarks):
-                if ~landmark.getObserved():
+                if not landmark.getObserved():
                     if method == 0:
                         d = landmark.calculateEuclidean(mean, cov)
                     elif method == 1:

@@ -5,14 +5,13 @@ from LandmarkClass import *
 from util import *
 from clustering import *
 from association import *
-from plotting import *
 
 # ROS imports
 import rospy
 from sensor_msgs.msg import PointCloud2, PointField
 import sensor_msgs.point_cloud2 as pc2
-from visualization_msgs.msg import Marker
-from visualization_msgs.msg import MarkerArray
+from visualization_msgs.msg import Marker, MarkerArray
+from geometry_msgs.msg import Pose, PoseArray
 
 # Parameters
 slice_count = 5
@@ -20,7 +19,7 @@ min_points = 5
 epsilon = 0.2
 max_uncertainty = 0.6
 association_threshold = 0.5
-observation_threshold = 0.7
+observation_threshold = 0.1
 downsample_size = 0.15
 outlier_neighbors = 80
 outlier_stdev = 0.2
@@ -68,11 +67,17 @@ def feature_extract(pcl_msg):
     landmarks = mask_landmarks(landmarks, slice_count, observation_threshold)
 
     # Convert to ROS pose array and publish positions of features
-    feature_list = MarkerArray()
+    marker_list = MarkerArray()
+    pos_list = PoseArray()
 
     for i, landmark in enumerate(landmarks):
+        landmark_pos = Pose()
         landmark_marker = Marker()
         x, y = landmark.getPos()
+        certainty = landmark.getObsCount()/slice_count
+        landmark_pos.position.x = x
+        landmark_pos.position.y = y
+        landmark_pos.position.z = certainty
         landmark_marker.header.frame_id = "map"
         landmark_marker.header.stamp = pcl_msg.header.stamp
         landmark_marker.type = 3
@@ -80,20 +85,22 @@ def feature_extract(pcl_msg):
         landmark_marker.scale.x = 0.2
         landmark_marker.scale.y = 0.2
         landmark_marker.scale.z = 3.0
-        landmark_marker.color.r = 0.0
+        landmark_marker.color.r = 1 - certainty
         landmark_marker.color.g = 0.0
-        landmark_marker.color.b = 1.0
-        landmark_marker.color.a = 0.7
+        landmark_marker.color.b = certainty
+        landmark_marker.color.a = 0.5
         landmark_marker.pose.position.x = x
         landmark_marker.pose.position.y = y
-        landmark_marker.pose.position.z = 0
+        landmark_marker.pose.position.z = 1.5
         landmark_marker.pose.orientation.x = 0
         landmark_marker.pose.orientation.y = 0
         landmark_marker.pose.orientation.z = 0
         landmark_marker.pose.orientation.w = 1
         landmark_marker.lifetime = rospy.Duration(0.1)
-        feature_list.markers.append(landmark_marker)
-    feature_pos_pub.publish(feature_list)
+        marker_list.markers.append(landmark_marker)
+        pos_list.poses.append(landmark_pos)
+    feature_marker_pub.publish(marker_list)
+    feature_pos_pub.publish(pos_list)
 
 
 
@@ -103,9 +110,11 @@ if __name__=="__main__":
     rospy.init_node('feature_node', anonymous=True)
     cloud_sub = rospy.Subscriber("/os_cloud_node/points_filtered", 
                                  data_class=PointCloud2, callback=feature_extract, 
-                                 queue_size=1)
-    feature_pos_pub = rospy.Publisher("feature_node/extracted_pos", 
+                                 queue_size=10)
+    feature_marker_pub = rospy.Publisher("feature_node/markers", 
                                       data_class=MarkerArray, queue_size=1)
+    feature_pos_pub = rospy.Publisher("feature_node/extracted_pos", 
+                                      data_class=PoseArray, queue_size=10)
     filtered_cloud_pub = rospy.Publisher("feature_node/points_outlier_filtered",
                                          data_class=PointCloud2, queue_size=10)
     while not rospy.is_shutdown():
