@@ -160,7 +160,8 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(preprocess_node src/Preprocess.cpp)
-add_executable(optimizer_node src/GraphOptimizer)
+add_executable(optimizer_node src/GraphOptimizer.cpp)
+add_executable(estimator_node src/OdometryEstimator.cpp)
 
 
 ## Rename C++ executable without prefix
@@ -182,6 +183,13 @@ target_link_libraries(preprocess_node
 )
 
 target_link_libraries(optimizer_node
+  ${catkin_LIBRARIES}
+  ${PCL_LIBRARIES}
+  ${EIGEN_LIBRARIES}
+  gtsam
+)
+
+target_link_libraries(estimator_node
   ${catkin_LIBRARIES}
   ${PCL_LIBRARIES}
   ${EIGEN_LIBRARIES}
