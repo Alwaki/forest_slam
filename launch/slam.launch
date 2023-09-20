@@ -27,9 +27,12 @@
 
     <!-- Setup static transform between sensors -->      
     <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_vectornav2ouster" 
-    args="0.0 0.0 0.1 1 0 0 0 vectornav os_sensor" />
+    args="0.0 0.0 0.0 1 0 0 0 vectornav os_sensor" />
     <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_baseLink2vectornav" 
     args="0.0 0.0 1.9 0 0 0 1 base_link vectornav" />
+
+    <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_movingBase2sensor" 
+    args="0.0 0.0 1.9 1 0 0 0 moving_base sensor" />
 
     <!-- Run feature extraction node -->
     <node pkg="forest_slam" type="feature_node.py" name="feature_node"
