@@ -64,10 +64,13 @@ class OdometryEstimator
         geometry_msgs::Point                    _current_pos;
         pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> _icp;
         ros::Publisher                          _icp_odom_pub;
+        ros::Publisher                          _current_pose2d_pub;
         ros::NodeHandle                         _nh;
         tf2_ros::TransformBroadcaster           _dynamic_broadcaster;
+        tf2_ros::TransformBroadcaster           _dynamic_broadcaster2;
         ros::Subscriber                         _imu_vectornav_sub;
         ros::Subscriber                         _feature_pos_sub;
         pcl::PointCloud<pcl::PointXYZ>::Ptr     _prev_cloud;
         bool                                    _prev_cloud_flag;
+        std::mutex                              _pos_mtx;
 };
