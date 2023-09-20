@@ -79,7 +79,9 @@ class Preprocess
     private:
         ros::NodeHandle                 _nh;
         ros::Subscriber                 _lidar_ouster_sub;
+        ros::Subscriber                 _lidar_ouster_sub_2;
         ros::Publisher                  _lidar_ouster_filtered_pub;
+        ros::Publisher                  _pc_transformed_pub;
 
         std::mutex                              _buffer_mtx;
         pcl::PointCloud<pcl::PointXYZ>::Ptr     _prev_cloud;
@@ -95,6 +97,7 @@ class Preprocess
 
         void _init_node();
         void _lidar_ouster_callback(const sensor_msgs::PointCloud2::ConstPtr &msgIn);
+        void _pc_transformed_callback(const sensor_msgs::PointCloud2::ConstPtr &msgIn);
         //void _lidar_odom_calculate(const sensor_msgs::PointCloud2::ConstPtr &msgIn);
         //void _dynamic_transformer(const geometry_msgs::PointStamped::ConstPtr &msgIn);
         void _imu_ouster_callback(const sensor_msgs::Imu::ConstPtr &msgIn);
