@@ -31,11 +31,13 @@ def cluster_all(coords, slice_count, epsilon, min_points, max_uncertainty):
 
 def cluster_slice(xy_slice, min_points, epsilon, max_uncertainty):
 
+    unique_labels = []
     # Compute clustering
-    clustering = HDBSCAN(min_cluster_size=min_points, cluster_selection_epsilon=epsilon).fit(xy_slice)
-    labels = clustering.labels_
-    unique_labels = set(labels)
-    unique_labels.discard(-1)
+    if len(xy_slice) > min_points:
+        clustering = HDBSCAN(min_cluster_size=min_points, cluster_selection_epsilon=epsilon).fit(xy_slice)
+        labels = clustering.labels_
+        unique_labels = set(labels)
+        unique_labels.discard(-1)
 
     # Data structures to hold clusters
     clusters_mean = np.zeros(shape=(2,0))
