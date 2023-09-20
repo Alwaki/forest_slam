@@ -11,7 +11,7 @@ from geometry_msgs.msg import PoseArray, PointStamped
 
 def feature_plot_cb(feature_array_msg):
     for feature in feature_array_msg.poses:
-        if feature.position.z >= 0.8:
+        if feature.position.z >= 0.6:
             if len(feature_list_x) > 0:
                 dist_x = 1000
                 dist_y = 1000
