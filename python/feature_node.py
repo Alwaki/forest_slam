@@ -114,7 +114,8 @@ if __name__=="__main__":
     feature_marker_pub = rospy.Publisher("feature_node/markers", 
                                       data_class=MarkerArray, queue_size=1)
     feature_pos_pub = rospy.Publisher("feature_node/extracted_pos", 
-                                      data_class=PoseArray, queue_size=10)
+                                      data_class=PoseArray, queue_size=100)
+    
     filtered_cloud_pub = rospy.Publisher("feature_node/points_outlier_filtered",
                                          data_class=PointCloud2, queue_size=10)
     while not rospy.is_shutdown():
