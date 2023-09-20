@@ -15,14 +15,14 @@ from geometry_msgs.msg import Pose, PoseArray
 
 # Parameters
 slice_count = 5
-min_points = 5
+min_points = 8
 epsilon = 0.2
 max_uncertainty = 0.6
-association_threshold = 0.5
+association_threshold = 0.8
 observation_threshold = 0.1
 downsample_size = 0.15
-outlier_neighbors = 80
-outlier_stdev = 0.2
+outlier_neighbors = 40
+outlier_stdev = 0.1
 distance_metric = 2    
 
 def feature_extract(pcl_msg):
@@ -82,13 +82,13 @@ def feature_extract(pcl_msg):
         landmark_marker.header.stamp = pcl_msg.header.stamp
         landmark_marker.type = 3
         landmark_marker.id = i
-        landmark_marker.scale.x = 0.2
-        landmark_marker.scale.y = 0.2
-        landmark_marker.scale.z = 3.0
-        landmark_marker.color.r = 1 - certainty
+        landmark_marker.scale.x = 0.15
+        landmark_marker.scale.y = 0.15
+        landmark_marker.scale.z = 2.5
+        landmark_marker.color.r = 1.1 - certainty
         landmark_marker.color.g = 0.0
         landmark_marker.color.b = certainty
-        landmark_marker.color.a = 0.5
+        landmark_marker.color.a = 0.3 + 0.7*certainty
         landmark_marker.pose.position.x = x
         landmark_marker.pose.position.y = y
         landmark_marker.pose.position.z = 1.5
