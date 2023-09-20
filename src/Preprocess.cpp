@@ -40,10 +40,10 @@ void Preprocess::_lidar_ouster_callback(const sensor_msgs::PointCloud2::ConstPtr
         // 3. Point within rough 7m radius of XY
         if(it[0] != 0 && it[1] != 0)
         {
-        if(3.0 > it[2] &&  it[2] > -1.0)
+        if(4.0 > it[2] &&  it[2] > -1.0)
         {
         float distance = it[0] * it[0] + it[1] * it[1];
-        if(distance < 49.0 && distance > 1)
+        if(distance < 64.0 && distance > 1)
         {
             auto time = msgIn->header.stamp + time_offset;
             geometry_msgs::PointStamped p_in, p_out;
