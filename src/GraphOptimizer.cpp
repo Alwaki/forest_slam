@@ -30,17 +30,21 @@ void GraphOptimizer::_init()
     _initialEstimate.insert(x0, prior);
     _graph.add(gtsam::PriorFactor<gtsam::Pose2>(x0, prior, _priorNoise));
 
+
     _graph_odom_sub = _nh.subscribe<geometry_msgs::PointStamped>
         ("/estimator_node/odom", 10, &GraphOptimizer::_odom_cb,
         this, ros::TransportHints().tcpNoDelay(true));
 
-    _graph_abs_pos_sub = _nh.subscribe<geometry_msgs::PointStamped>
-        ("/estimator_node/absPose", 10, &GraphOptimizer::_absPose_cb,
-        this, ros::TransportHints().tcpNoDelay(true));
-
+    
+    _graph_abs_pos_sub = _nh.subscribe<geometry_msgs::Pose2D>
+        ("/estimator_node/absPose", 1, &GraphOptimizer::_absPose_cb,
+        this);
+    
+    
     _graph_landmark_sub = _nh.subscribe<geometry_msgs::PoseArray>
         ("/feature_node/extracted_pos", 100, &GraphOptimizer::_landmark_cb,
         this, ros::TransportHints().tcpNoDelay(true));
+        
 }
 
 void GraphOptimizer::_landmark_cb(const geometry_msgs::PoseArray::ConstPtr &msgIn)
@@ -49,10 +53,30 @@ void GraphOptimizer::_landmark_cb(const geometry_msgs::PoseArray::ConstPtr &msgI
     {
         if(pose.position.z > 0.9)
         {
-            gtsam::Point2 landmark(pose.position.x, pose.position.y);
-            _add_landmark(landmark);
+            double min_distance = 100;
+            double distance = 100;
+            for (auto& it : _landmark_vector) 
+            {
+                distance = pow(it.first - pose.position.x, 2) + pow(it.second - pose.position.y, 2);
+                if(distance < min_distance)
+                {
+                    min_distance = distance;
+                }
+            }
+            if(min_distance > 2)
+            {
+                gtsam::Point2 landmark(pose.position.x, pose.position.y);
+                _landmark_vector.push_back(std::make_pair(pose.position.x, pose.position.y));
+                _add_landmark(landmark);
+            }
+
         }
     }
+    if(_opt_counter % 100)
+    {
+        _optimize_graph();
+    }
+    _opt_counter++;
 }
 
 void GraphOptimizer::_odom_cb(const geometry_msgs::PointStamped::ConstPtr &msgIn)
@@ -61,12 +85,12 @@ void GraphOptimizer::_odom_cb(const geometry_msgs::PointStamped::ConstPtr &msgIn
     _add_pose(odom);
 }
 
-void GraphOptimizer::_absPose_cb(const geometry_msgs::PointStamped::ConstPtr &msgIn)
+void GraphOptimizer::_absPose_cb(const geometry_msgs::Pose2D::ConstPtr &msgIn)
 {
     _pos_mtx.lock();
-    _current_pose[0] = msgIn->point.x;
-    _current_pose[1] = msgIn->point.y;
-    _current_pose[2] = msgIn->point.z;
+    _current_pose[0] = msgIn->x;
+    _current_pose[1] = msgIn->y;
+    _current_pose[2] = msgIn->theta;
     _pos_mtx.unlock();
 
 }
@@ -78,6 +102,7 @@ void GraphOptimizer::_add_landmark(const gtsam::Point2 landmarkMsg)
     _symbol_mtx.unlock();
     gtsam::Symbol l('L', _landmark_symbol_idx++);
     _landmark_symbols.push_back(l);
+
 
     _pos_mtx.lock();
     double dy = landmarkMsg[0] - _current_pose[1];

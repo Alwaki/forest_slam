@@ -20,7 +20,7 @@ void OdometryEstimator::_init_node()
     _prev_cloud_flag = 0;
     _current_pos.x = 0;
     _current_pos.y = 0;
-    _current_pos.z = 0;
+    _current_pos.theta = 0;
 
     // Setup subscribers and publishers
     _feature_pos_sub = _nh.subscribe<geometry_msgs::PoseArray>
@@ -34,8 +34,8 @@ void OdometryEstimator::_init_node()
     _icp_odom_pub  = _nh.advertise<geometry_msgs::PointStamped>(
         "/estimator_node/odom", 20);
     
-    _current_pose2d_pub  = _nh.advertise<geometry_msgs::PointStamped>(
-        "/estimator_node/absPose", 20);
+    _current_pose2d_pub  = _nh.advertise<geometry_msgs::Pose2D>(
+        "/estimator_node/absPose", 1);
 
 }
 
@@ -70,7 +70,7 @@ void OdometryEstimator::_lidar_ICP(const geometry_msgs::PoseArray::ConstPtr &msg
         odom.point.x = transformation_matrix(0,3);
         odom.point.y = transformation_matrix(1,3);
         _pos_mtx.lock();
-        odom.point.z = _current_pos.z;
+        odom.point.z = _yaw_diff;
         _icp_odom_pub.publish(odom);
         _current_pos.x += odom.point.x;
         _current_pos.y += odom.point.y;
@@ -97,7 +97,8 @@ void OdometryEstimator::_dynamic_transform_broadcast(const sensor_msgs::Imu::Con
     m.getRPY(roll, pitch, yaw);
 
     _pos_mtx.lock();
-    _current_pos.z = yaw;
+    _yaw_diff = _current_pos.theta - yaw;
+    _current_pos.theta = yaw;
     _pos_mtx.unlock();
     
     //ROS_INFO("X: %lf, Y: %lf", _current_pos.x, _current_pos.y);
