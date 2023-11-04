@@ -20,6 +20,7 @@
 #include "geometry_msgs/PoseArray.h"
 #include "geometry_msgs/TransformStamped.h"
 #include "visualization_msgs/MarkerArray.h"
+#include "geometry_msgs/Pose2D.h"
 
 // TF transform libraries
 #include <tf2_ros/transform_broadcaster.h>
@@ -61,7 +62,7 @@ class OdometryEstimator
         void _lidar_ICP(const geometry_msgs::PoseArray::ConstPtr &msgIn);
         void _dynamic_transform_broadcast(const sensor_msgs::Imu::ConstPtr &msgIn);
 
-        geometry_msgs::Point                    _current_pos;
+        geometry_msgs::Pose2D                    _current_pos;
         pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> _icp;
         ros::Publisher                          _icp_odom_pub;
         ros::Publisher                          _current_pose2d_pub;
@@ -73,4 +74,5 @@ class OdometryEstimator
         pcl::PointCloud<pcl::PointXYZ>::Ptr     _prev_cloud;
         bool                                    _prev_cloud_flag;
         std::mutex                              _pos_mtx;
+        double                                  _yaw_diff;
 };

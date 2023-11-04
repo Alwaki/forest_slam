@@ -18,6 +18,7 @@
 #include "geometry_msgs/Quaternion.h"
 #include "geometry_msgs/TransformStamped.h"
 #include "geometry_msgs/PoseArray.h"
+#include "geometry_msgs/Pose2D.h"
 
 // GTSAM library
 #include "gtsam/geometry/Pose2.h"
@@ -40,6 +41,7 @@
 #include <thread>
 #include <string>
 #include <stdio.h>
+#include <vector>
 
 class GraphOptimizer
 {
@@ -52,7 +54,7 @@ class GraphOptimizer
         void _init();
         void _landmark_cb(const geometry_msgs::PoseArray::ConstPtr &msgIn);
         void _odom_cb(const geometry_msgs::PointStamped::ConstPtr &msgIn);
-        void _absPose_cb(const geometry_msgs::PointStamped::ConstPtr &msgIn);
+        void _absPose_cb(const geometry_msgs::Pose2D::ConstPtr &msgIn);
         void _add_landmark(const gtsam::Point2 landmarkMsg);
         void _add_pose(const gtsam::Pose2 poseMsg);
         void _optimize_graph();
@@ -72,8 +74,10 @@ class GraphOptimizer
         gtsam::noiseModel::Diagonal::shared_ptr  _rangeNoise;
         gtsam::Values                            _initialEstimate;
         gtsam::Vector3                           _current_pose;
-        int                                      _landmark_symbol_idx = 0;
-        int                                      _odom_symbol_idx = 0;
+        int                                      _landmark_symbol_idx = 1;
+        int                                      _odom_symbol_idx = 1;
+        int                                      _opt_counter = 1;
+        std::vector<std::pair<float,float>>      _landmark_vector;
 
 
         ros::Subscriber                          _graph_odom_sub;
