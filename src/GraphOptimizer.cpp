@@ -14,17 +14,35 @@ GraphOptimizer::~GraphOptimizer() = default;
 
 void GraphOptimizer::_init()
 {
-    _current_pose[0] = 0.0;
-    _current_pose[1] = 0.0;
-    _current_pose[2] = 0.0;
-    _data_association_threshold = 0.5;
-    _loop_closure_threshold     = 0.1;
-    _priorNoise  = gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector3(1.0, 1.0, 0.1));
-    _odomNoise   = gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector3(0.5, 0.5, 0.1));
-    _rangeNoise  = gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector2(0.3, 0.3));
+    _nh.getParam("data_association_threshold", _data_association_threshold);
+    _nh.getParam("loop_closure_threshold", _loop_closure_threshold);
+    _nh.getParam("prior_noise_x", _prior_noise_x);
+    _nh.getParam("prior_noise_y", _prior_noise_y);
+    _nh.getParam("prior_noise_theta", _prior_noise_theta);
+    _nh.getParam("odom_noise_x", _odom_noise_x);
+    _nh.getParam("odom_noise_y", _odom_noise_y);
+    _nh.getParam("odom_noise_theta", _odom_noise_theta);
+    _nh.getParam("range_noise_bearing", _range_noise_bearing);
+    _nh.getParam("range_noise_distance", _range_noise_distance);
+    _nh.getParam("init_pose", _init_pose);
+    _nh.getParam("optimization_interval", _optimization_interval);
+    _nh.getParam("landmark_probability_limit", _landmark_probability_limit);
+    
+    _current_pose[0] = _init_pose[0];
+    _current_pose[1] = _init_pose[1];
+    _current_pose[2] = _init_pose[2];
+
+    _loop_counter = 0;
+
+    _priorNoise  = gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector3(_prior_noise_x, _prior_noise_y, _prior_noise_theta));
+    _odomNoise   = gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector3(_odom_noise_x, _odom_noise_y, _odom_noise_theta));
+    _rangeNoise  = gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector2(_range_noise_bearing, _range_noise_distance));
+    _matchNoise  = gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector3(1.0, 1.0, 3.0));
+
     gtsam::Symbol x0('P', 0);
     gtsam::Symbol l0('L', 0);
-    gtsam::Pose2 prior(0.0, 0.0, 0.0);
+    gtsam::Pose2 prior(_init_pose[0], _init_pose[1], _init_pose[2]);
+
     _pose_symbols.push_back(x0);
     _landmark_symbols.push_back(l0);
     _initialEstimate.insert(x0, prior);
@@ -34,15 +52,17 @@ void GraphOptimizer::_init()
     _graph_odom_sub = _nh.subscribe<geometry_msgs::PointStamped>
         ("/estimator_node/odom", 10, &GraphOptimizer::_odom_cb,
         this, ros::TransportHints().tcpNoDelay(true));
-
-    
+   
     _graph_abs_pos_sub = _nh.subscribe<geometry_msgs::Pose2D>
         ("/estimator_node/absPose", 1, &GraphOptimizer::_absPose_cb,
         this);
     
-    
     _graph_landmark_sub = _nh.subscribe<geometry_msgs::PoseArray>
         ("/feature_node/extracted_pos", 100, &GraphOptimizer::_landmark_cb,
+        this, ros::TransportHints().tcpNoDelay(true));
+
+    _loop_detection_sub = _nh.subscribe<geometry_msgs::PoseArray>
+        ("/feature_node/extracted_pos", 100, &GraphOptimizer::_loop_detection_cb,
         this, ros::TransportHints().tcpNoDelay(true));
         
 }
@@ -51,7 +71,7 @@ void GraphOptimizer::_landmark_cb(const geometry_msgs::PoseArray::ConstPtr &msgI
 {
     for(auto & pose: msgIn->poses)
     {
-        if(pose.position.z > 0.9)
+        if(pose.position.z > _landmark_probability_limit)
         {
             double min_distance = 100;
             double distance = 100;
@@ -72,12 +92,64 @@ void GraphOptimizer::_landmark_cb(const geometry_msgs::PoseArray::ConstPtr &msgI
 
         }
     }
-    if(_opt_counter % 100 == 0)
+    if(_opt_counter % _optimization_interval == 0)
     {
         ROS_INFO("Optimizing");
         _optimize_graph();
     }
     _opt_counter++;
+}
+
+void GraphOptimizer::_loop_detection_cb(const geometry_msgs::PoseArray::ConstPtr &msgIn)
+{
+    int memory_interval = 10;
+    if(_loop_counter % memory_interval == 0)
+    {
+        int bucket_count = 10;
+        double max_distance = 64;
+        double min_distance = 4;
+        double dx = (max_distance - min_distance)/bucket_count;
+        std::array<int, 10> histogram_new = { };
+
+        for(auto & pose: msgIn->poses)
+        {
+            double distance = pow(_current_pose[0] - pose.position.x, 2) + pow(_current_pose[1]- pose.position.y, 2);
+            distance = std::max(min_distance, distance - min_distance);
+            int index = std::min(distance, max_distance) / dx;
+            histogram_new[index]++;
+        }
+
+        int max_matches = 0;
+        int max_ind = 0;
+        int match_ind = 0;
+
+        for(auto & histogram_old: _landmark_distances_memory)
+        {
+            int matches = std::inner_product(histogram_old.begin(), histogram_old.end(), histogram_new.begin(), 0,
+                                    std::plus<>(), std::equal_to<>());
+
+            if(matches > max_matches)
+            {
+                max_matches = matches;
+                max_ind = match_ind * memory_interval;
+            }    
+            match_ind++;
+        }
+
+        if(max_matches > _loop_closure_threshold)
+        {
+            _symbol_mtx.lock();
+            gtsam::Symbol x_matched = _pose_symbols[max_ind];
+            gtsam::Pose2 match_odom(0, 0, 0);
+            _graph.add(gtsam::BetweenFactor<gtsam::Pose2>(
+            _pose_symbols.back(), x_matched, match_odom, _matchNoise));
+            _symbol_mtx.unlock();
+            ROS_INFO("Matched with %d matches!", max_matches);
+        }
+
+        _landmark_distances_memory.push_back(histogram_new);
+    }
+    _loop_counter++;
 }
 
 void GraphOptimizer::_odom_cb(const geometry_msgs::PointStamped::ConstPtr &msgIn)

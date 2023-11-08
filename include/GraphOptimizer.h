@@ -43,6 +43,18 @@
 #include <stdio.h>
 #include <vector>
 
+// Point cloud library
+#include <pcl/point_cloud.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl_ros/transforms.h>
+#include <pcl/filters/passthrough.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/registration/icp.h>
+#include <pcl/filters/statistical_outlier_removal.h>
+#include <pcl/filters/radius_outlier_removal.h>
+
 class GraphOptimizer
 {
     public:
@@ -53,6 +65,7 @@ class GraphOptimizer
     private:
         void _init();
         void _landmark_cb(const geometry_msgs::PoseArray::ConstPtr &msgIn);
+        void _loop_detection_cb(const geometry_msgs::PoseArray::ConstPtr &msgIn);
         void _odom_cb(const geometry_msgs::PointStamped::ConstPtr &msgIn);
         void _absPose_cb(const geometry_msgs::Pose2D::ConstPtr &msgIn);
         void _add_landmark(const gtsam::Point2 landmarkMsg);
@@ -61,6 +74,22 @@ class GraphOptimizer
         
         double                                   _data_association_threshold;
         double                                   _loop_closure_threshold;
+        double                                   _prior_noise_x;
+        double                                   _prior_noise_y;
+        double                                   _prior_noise_theta;
+        double                                   _odom_noise_x;
+        double                                   _odom_noise_y;
+        double                                   _odom_noise_theta;
+        double                                   _range_noise_bearing;
+        double                                   _range_noise_distance;
+        std::vector<double>                      _init_pose;
+        int                                      _optimization_interval;
+        double                                   _landmark_probability_limit;
+        int                                      _loop_counter;
+
+        std::vector<std::array<int, 10>>          _landmark_distances_memory;
+
+
         std::mutex                               _symbol_mtx;
         std::mutex                               _pos_mtx;
         ros::NodeHandle                          _nh;
@@ -72,6 +101,7 @@ class GraphOptimizer
         gtsam::noiseModel::Diagonal::shared_ptr  _priorNoise;
         gtsam::noiseModel::Diagonal::shared_ptr  _odomNoise;
         gtsam::noiseModel::Diagonal::shared_ptr  _rangeNoise;
+        gtsam::noiseModel::Diagonal::shared_ptr  _matchNoise;
         gtsam::Values                            _initialEstimate;
         gtsam::Vector3                           _current_pose;
         int                                      _landmark_symbol_idx = 1;
@@ -83,6 +113,7 @@ class GraphOptimizer
         ros::Subscriber                          _graph_odom_sub;
         ros::Subscriber                          _graph_landmark_sub;
         ros::Subscriber                          _graph_abs_pos_sub;
+        ros::Subscriber                          _loop_detection_sub;
         
         
 };
