@@ -72,8 +72,9 @@ void GraphOptimizer::_landmark_cb(const geometry_msgs::PoseArray::ConstPtr &msgI
 
         }
     }
-    if(_opt_counter % 100)
+    if(_opt_counter % 100 == 0)
     {
+        ROS_INFO("Optimizing");
         _optimize_graph();
     }
     _opt_counter++;
