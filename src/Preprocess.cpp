@@ -16,18 +16,18 @@ void Preprocess::_init_node()
 {
     // Setup subscribers and publishers
     _lidar_ouster_sub  = _nh.subscribe<sensor_msgs::PointCloud2>
-        ("/os_cloud_node/points", 10, &Preprocess::_lidar_ouster_callback,
+        ("/os_cloud_node/points", 1, &Preprocess::_lidar_ouster_callback,
         this, ros::TransportHints().tcpNoDelay(true));
 
     _lidar_ouster_filtered_pub  = _nh.advertise<sensor_msgs::PointCloud2>(
-        "/os_cloud_node/points_filtered", 5);
+        "/os_cloud_node/points_filtered", 2);
 
     _lidar_ouster_sub_2  = _nh.subscribe<sensor_msgs::PointCloud2>
-        ("/os_cloud_node/points", 10, &Preprocess::_pc_transformed_callback,
+        ("/os_cloud_node/points", 1, &Preprocess::_pc_transformed_callback,
         this, ros::TransportHints().tcpNoDelay(true));
 
     _pc_transformed_pub  = _nh.advertise<sensor_msgs::PointCloud2>(
-        "/os_cloud_node/points_transformed", 5);
+        "/os_cloud_node/points_transformed", 2);
 }
 
 void Preprocess::_lidar_ouster_callback(const sensor_msgs::PointCloud2::ConstPtr &msgIn)

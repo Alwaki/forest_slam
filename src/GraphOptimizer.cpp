@@ -14,19 +14,19 @@ GraphOptimizer::~GraphOptimizer() = default;
 
 void GraphOptimizer::_init()
 {
-    _nh.getParam("data_association_threshold", _data_association_threshold);
-    _nh.getParam("loop_closure_threshold", _loop_closure_threshold);
-    _nh.getParam("prior_noise_x", _prior_noise_x);
-    _nh.getParam("prior_noise_y", _prior_noise_y);
-    _nh.getParam("prior_noise_theta", _prior_noise_theta);
-    _nh.getParam("odom_noise_x", _odom_noise_x);
-    _nh.getParam("odom_noise_y", _odom_noise_y);
-    _nh.getParam("odom_noise_theta", _odom_noise_theta);
-    _nh.getParam("range_noise_bearing", _range_noise_bearing);
-    _nh.getParam("range_noise_distance", _range_noise_distance);
-    _nh.getParam("init_pose", _init_pose);
-    _nh.getParam("optimization_interval", _optimization_interval);
-    _nh.getParam("landmark_probability_limit", _landmark_probability_limit);
+    _nh.getParam("/forest_slam/optimization/data_association_threshold", _data_association_threshold);
+    _nh.getParam("/forest_slam/optimization/loop_closure_threshold", _loop_closure_threshold);
+    _nh.getParam("/forest_slam/optimization/prior_noise_x", _prior_noise_x);
+    _nh.getParam("/forest_slam/optimization/prior_noise_y", _prior_noise_y);
+    _nh.getParam("/forest_slam/optimization/prior_noise_theta", _prior_noise_theta);
+    _nh.getParam("/forest_slam/optimization/odom_noise_x", _odom_noise_x);
+    _nh.getParam("/forest_slam/optimization/odom_noise_y", _odom_noise_y);
+    _nh.getParam("/forest_slam/optimization/odom_noise_theta", _odom_noise_theta);
+    _nh.getParam("/forest_slam/optimization/range_noise_bearing", _range_noise_bearing);
+    _nh.getParam("/forest_slam/optimization/range_noise_distance", _range_noise_distance);
+    _nh.getParam("/forest_slam/optimization/init_pose", _init_pose);
+    _nh.getParam("/forest_slam/optimization/optimization_interval", _optimization_interval);
+    _nh.getParam("/forest_slam/optimization/landmark_probability_limit", _landmark_probability_limit);
     
     _current_pose[0] = _init_pose[0];
     _current_pose[1] = _init_pose[1];

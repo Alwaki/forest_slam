@@ -1,15 +1,16 @@
-
-# Backend parameters
-data_association_threshold: 2.0
-loop_closure_threshold: 8
-prior_noise_x: 1.0
-prior_noise_y: 1.0
-prior_noise_theta: 0.1
-odom_noise_x: 0.5
-odom_noise_y: 0.5
-odom_noise_theta: 0.1
-range_noise_bearing: 0.3
-range_noise_distance: 0.3
-init_pose: [0.0, 0.0, 0.0]
-optimization_interval: 100
-landmark_probability_limit: 0.9
+forest_slam:
+  # Backend parameters
+  optimization:
+    data_association_threshold: 2.0
+    loop_closure_threshold: 8
+    prior_noise_x: 1.0
+    prior_noise_y: 1.0
+    prior_noise_theta: 0.1
+    odom_noise_x: 0.5
+    odom_noise_y: 0.5
+    odom_noise_theta: 0.1
+    range_noise_bearing: 0.3
+    range_noise_distance: 0.3
+    init_pose: [0.0, 0.0, 0.0]
+    optimization_interval: 100
+    landmark_probability_limit: 0.9
