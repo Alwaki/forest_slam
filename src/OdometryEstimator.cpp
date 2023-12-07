@@ -21,6 +21,7 @@ void OdometryEstimator::_init_node()
     _current_pos.x = 0;
     _current_pos.y = 0;
     _current_pos.theta = 0;
+    _total_distance = 0;
 
     // Setup subscribers and publishers
     _feature_pos_sub = _nh.subscribe<geometry_msgs::PoseArray>
@@ -72,9 +73,12 @@ void OdometryEstimator::_lidar_ICP(const geometry_msgs::PoseArray::ConstPtr &msg
         _pos_mtx.lock();
         odom.point.z = _yaw_diff;
         _icp_odom_pub.publish(odom);
+        _total_distance += sqrt(pow(odom.point.x, 2) + pow(odom.point.y, 2));
+        ROS_INFO("Distance: %lf", _total_distance);
         _current_pos.x += odom.point.x;
         _current_pos.y += odom.point.y;
         _current_pose2d_pub.publish(_current_pos);
+        //ROS_INFO("Pose, X: %lf, Y: %lf, Theta: %lf", _current_pos.x, _current_pos.y, _current_pos.theta);
         _pos_mtx.unlock();
     }
     

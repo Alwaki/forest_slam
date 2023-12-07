@@ -75,4 +75,5 @@ class OdometryEstimator
         bool                                    _prev_cloud_flag;
         std::mutex                              _pos_mtx;
         double                                  _yaw_diff;
+        double                                  _total_distance;
 };

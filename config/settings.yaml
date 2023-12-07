@@ -12,5 +12,5 @@ forest_slam:
     range_noise_bearing: 0.3
     range_noise_distance: 0.3
     init_pose: [0.0, 0.0, 0.0]
-    optimization_interval: 100
+    optimization_interval: 10000
     landmark_probability_limit: 0.9
