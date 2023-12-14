@@ -90,7 +90,7 @@ void OdometryEstimator::feature_icp_(const geometry_msgs::PoseArray::ConstPtr &m
         odom.point.z = yaw_diff_;
         icp_odom_pub_.publish(odom);
         total_distance_ += sqrt(pow(odom.point.x, 2) + pow(odom.point.y, 2));
-        //ROS_INFO("Distance: %lf", total_distance_);
+        ROS_INFO("Distance: %lf", total_distance_);
         current_pos_.x += odom.point.x;
         current_pos_.y += odom.point.y;
         current_pose2d_pub_.publish( current_pos_);

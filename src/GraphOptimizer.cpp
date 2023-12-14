@@ -1,6 +1,6 @@
 /**
  * @file    GraphOptimizer.cpp
- * @brief   Class file for the SLAM backend using GTSAM solver library
+ * @brief   SLAM backend using GTSAM solver library
  * @author  Alexander Wallén Kiessling
  */
 
@@ -14,34 +14,34 @@ GraphOptimizer::~GraphOptimizer() = default;
 
 void GraphOptimizer::_init()
 {
-    _nh.getParam("/forest_slam/optimization/data_association_threshold", _data_association_threshold);
-    _nh.getParam("/forest_slam/optimization/loop_closure_threshold", _loop_closure_threshold);
-    _nh.getParam("/forest_slam/optimization/prior_noise_x", _prior_noise_x);
-    _nh.getParam("/forest_slam/optimization/prior_noise_y", _prior_noise_y);
-    _nh.getParam("/forest_slam/optimization/prior_noise_theta", _prior_noise_theta);
-    _nh.getParam("/forest_slam/optimization/odom_noise_x", _odom_noise_x);
-    _nh.getParam("/forest_slam/optimization/odom_noise_y", _odom_noise_y);
-    _nh.getParam("/forest_slam/optimization/odom_noise_theta", _odom_noise_theta);
-    _nh.getParam("/forest_slam/optimization/range_noise_bearing", _range_noise_bearing);
-    _nh.getParam("/forest_slam/optimization/range_noise_distance", _range_noise_distance);
-    _nh.getParam("/forest_slam/optimization/init_pose", _init_pose);
-    _nh.getParam("/forest_slam/optimization/optimization_interval", _optimization_interval);
-    _nh.getParam("/forest_slam/optimization/landmark_probability_limit", _landmark_probability_limit);
+    _nh.getParam("/forest_slam/optimization/data_association_threshold", data_association_threshold_);
+    _nh.getParam("/forest_slam/optimization/loop_closure_threshold", loop_closure_threshold_);
+    _nh.getParam("/forest_slam/optimization/prior_noise_x", prior_noise_x_);
+    _nh.getParam("/forest_slam/optimization/prior_noise_y", prior_noise_y_);
+    _nh.getParam("/forest_slam/optimization/prior_noise_theta", prior_noise_theta_);
+    _nh.getParam("/forest_slam/optimization/odom_noise_x", odom_noise_x_);
+    _nh.getParam("/forest_slam/optimization/odom_noise_y", odom_noise_y_);
+    _nh.getParam("/forest_slam/optimization/odom_noise_theta", odom_noise_theta_);
+    _nh.getParam("/forest_slam/optimization/range_noise_bearing", range_noise_bearing_);
+    _nh.getParam("/forest_slam/optimization/range_noise_distance", range_noise_distance_);
+    _nh.getParam("/forest_slam/optimization/init_pose", init_pose_);
+    _nh.getParam("/forest_slam/optimization/optimization_interval", optimization_interval_);
+    _nh.getParam("/forest_slam/optimization/landmark_probability_limit", landmark_probability_limit_);
     
-    _current_pose[0] = _init_pose[0];
-    _current_pose[1] = _init_pose[1];
-    _current_pose[2] = _init_pose[2];
+    _current_pose[0] = init_pose_[0];
+    _current_pose[1] = init_pose_[1];
+    _current_pose[2] = init_pose_[2];
 
-    _loop_counter = 0;
+    loop_counter_ = 0;
 
-    _priorNoise  = gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector3(_prior_noise_x, _prior_noise_y, _prior_noise_theta));
-    _odomNoise   = gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector3(_odom_noise_x, _odom_noise_y, _odom_noise_theta));
-    _rangeNoise  = gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector2(_range_noise_bearing, _range_noise_distance));
+    _priorNoise  = gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector3(prior_noise_x_, prior_noise_y_, prior_noise_theta_));
+    _odomNoise   = gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector3(odom_noise_x_, odom_noise_y_, odom_noise_theta_));
+    _rangeNoise  = gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector2(range_noise_bearing_, range_noise_distance_));
     _matchNoise  = gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector3(1.0, 1.0, 3.0));
 
     gtsam::Symbol x0('P', 0);
     gtsam::Symbol l0('L', 0);
-    gtsam::Pose2 prior(_init_pose[0], _init_pose[1], _init_pose[2]);
+    gtsam::Pose2 prior(init_pose_[0], init_pose_[1], init_pose_[2]);
 
     _pose_symbols.push_back(x0);
     _landmark_symbols.push_back(l0);
@@ -71,10 +71,10 @@ void GraphOptimizer::_landmark_cb(const geometry_msgs::PoseArray::ConstPtr &msgI
 {
     for(auto & pose: msgIn->poses)
     {
-        if(pose.position.z > _landmark_probability_limit)
+        if(pose.position.z >= landmark_probability_limit_)
         {
-            double min_distance = 100;
-            double distance = 100;
+            double min_distance = 10000;
+            double distance = 10000;
             for (auto& it : _landmark_vector) 
             {
                 distance = pow(it.first - pose.position.x, 2) + pow(it.second - pose.position.y, 2);
@@ -92,7 +92,7 @@ void GraphOptimizer::_landmark_cb(const geometry_msgs::PoseArray::ConstPtr &msgI
 
         }
     }
-    if(_opt_counter % _optimization_interval == 0)
+    if(_opt_counter % optimization_interval_ == 0)
     {
         ROS_INFO("Optimizing");
         _optimize_graph();
@@ -102,15 +102,102 @@ void GraphOptimizer::_landmark_cb(const geometry_msgs::PoseArray::ConstPtr &msgI
 
 void GraphOptimizer::_loop_detection_cb(const geometry_msgs::PoseArray::ConstPtr &msgIn)
 {
-    int memory_interval = 10;
-    if(_loop_counter % memory_interval == 0)
+    /*
+    Idea:
+    1. Convert the detected features into ranges and sample them
+
+    2. two sample non-parametric hypothesis testing with kolmogorov
+
+    3. If detection, use ICP or the above (with procrusted analysis) to get 
+    constraint to add loop closure into graph
+    */
+
+
+
+   if(loop_counter_ % 10 == 0)
+   {
+    std::vector<double> new_memory;
+
+    for(auto & pose: msgIn->poses)
     {
-        int bucket_count = 10;
+        // Sample features based on their probability
+        double r = ((double) rand() / (RAND_MAX));
+        if(r < pose.position.z)
+        {
+            // Convert to range for rotation invariance
+            double distance = sqrt(pow(_current_pose[0] - pose.position.x, 2) + 
+                                    pow(_current_pose[1]- pose.position.y, 2));
+            new_memory.push_back(distance);
+        }
+    }
+
+    double minDiff = 10000000000.0;
+    bool loop_detected = 0;
+
+
+    for(auto & old_memory: long_memory_)
+    {
+        auto [n1, n2, diff] = ks_test_(new_memory, old_memory);
+        if(diff < minDiff) 
+        {
+            minDiff = diff;
+            double threshold = 0.71 * sqrt((n1+n2)/(n1*n2));
+            if(minDiff<threshold)
+            {
+                loop_detected = 1;
+                ROS_INFO("Loop detected!");
+                ROS_INFO("threshold: %lf", threshold);
+                ROS_INFO("Min ks result: %lf", minDiff);
+            }
+        }
+    }
+
+    // Add location to memory
+    short_memory_.push_back(new_memory);
+    if(short_memory_.size() > 10)
+    {
+        long_memory_.push_back(short_memory_[0]);
+        short_memory_.pop_front();
+    }
+   }
+   loop_counter_++;
+}
+
+std::tuple<double, double, double> GraphOptimizer::ks_test_(const std::vector<double>& sample1, const std::vector<double>& sample2) 
+{
+    // Combine and sort both samples
+    std::vector<double> combined;
+    combined.insert(combined.end(), sample1.begin(), sample1.end());
+    combined.insert(combined.end(), sample2.begin(), sample2.end());
+    std::sort(combined.begin(), combined.end());
+
+    // Calculate ECDFs for both samples
+    double n1 = static_cast<double>(sample1.size());
+    double n2 = static_cast<double>(sample2.size());
+    double maxDiff = 0.0;
+    for (size_t i = 0; i < combined.size(); ++i) {
+        double cdf1 = static_cast<double>(std::lower_bound(sample1.begin(), sample1.end(), combined[i]) - sample1.begin()) / n1;
+        double cdf2 = static_cast<double>(std::lower_bound(sample2.begin(), sample2.end(), combined[i]) - sample2.begin()) / n2;
+        double diff = std::abs(cdf1 - cdf2);
+        if (diff > maxDiff) {
+            maxDiff = diff;
+        }
+    }
+    return std::make_tuple(n1, n2, maxDiff);
+}
+
+
+/*
+void GraphOptimizer::_loop_detection_cb(const geometry_msgs::PoseArray::ConstPtr &msgIn)
+{
+    loop_counter_++;
+    if(loop_counter_ % 30 == 0)
+    {
+        int bucket_count = 40;
         double max_distance = 64;
         double min_distance = 4;
         double dx = (max_distance - min_distance)/bucket_count;
-        std::array<int, 10> histogram_new = { };
-
+        std::array<int, 40> histogram_new = { };
         for(auto & pose: msgIn->poses)
         {
             double distance = pow(_current_pose[0] - pose.position.x, 2) + pow(_current_pose[1]- pose.position.y, 2);
@@ -118,25 +205,32 @@ void GraphOptimizer::_loop_detection_cb(const geometry_msgs::PoseArray::ConstPtr
             int index = std::min(distance, max_distance) / dx;
             histogram_new[index]++;
         }
-
         int max_matches = 0;
         int max_ind = 0;
         int match_ind = 0;
 
-        for(auto & histogram_old: _landmark_distances_memory)
+        if(loop_counter_ > 150)
         {
-            int matches = std::inner_product(histogram_old.begin(), histogram_old.end(), histogram_new.begin(), 0,
-                                    std::plus<>(), std::equal_to<>());
+            std::vector<std::array<int, 40>>::iterator end_it = _landmark_distances_memory.end();
+            std::prev(end_it, 10);
+            for (auto it = _landmark_distances_memory.begin(); it != end_it;  ++it )
+            {   
+                auto & histogram_old = *it;
+                int matches = std::inner_product(histogram_old.begin(), histogram_old.end(), 
+                                                histogram_new.begin(), 0,
+                                                std::plus<>(), std::equal_to<>());
 
-            if(matches > max_matches)
-            {
-                max_matches = matches;
-                max_ind = match_ind * memory_interval;
-            }    
-            match_ind++;
+                    if(matches > max_matches)
+                    {
+                        max_matches = matches;
+                        max_ind = match_ind * 30;
+                    }    
+                    match_ind++;
+            }
         }
-
-        if(max_matches > _loop_closure_threshold)
+        ROS_INFO("matches: %d", max_matches);
+        // Successful loop detection, set constraint
+        if(max_matches >= loop_closure_threshold_)
         {
             _symbol_mtx.lock();
             gtsam::Symbol x_matched = _pose_symbols[max_ind];
@@ -144,13 +238,15 @@ void GraphOptimizer::_loop_detection_cb(const geometry_msgs::PoseArray::ConstPtr
             _graph.add(gtsam::BetweenFactor<gtsam::Pose2>(
             _pose_symbols.back(), x_matched, match_odom, _matchNoise));
             _symbol_mtx.unlock();
-            ROS_INFO("Matched with %d matches!", max_matches);
+            //ROS_INFO("--------------------------------------");
+            //ROS_INFO("Matched with %d matches!", max_matches);
+            cooldown_counter_ = 0;
         }
 
         _landmark_distances_memory.push_back(histogram_new);
     }
-    _loop_counter++;
 }
+*/
 
 void GraphOptimizer::_odom_cb(const geometry_msgs::PointStamped::ConstPtr &msgIn)
 {

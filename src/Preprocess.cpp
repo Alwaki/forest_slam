@@ -6,10 +6,12 @@
 
 #include "Preprocess.h"
 
+// Constructor
 Preprocess::Preprocess():
     _nh("~")
     {_init_node();}
 
+// Destructor
 Preprocess::~Preprocess() = default;
 
 void Preprocess::_init_node()

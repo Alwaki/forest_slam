@@ -63,6 +63,43 @@ class GraphOptimizer
         void get_map();
 
     private:
+
+        // Parameters
+        double                                   cooldown_counter_;
+        double                                   data_association_threshold_;
+        double                                   loop_closure_threshold_;
+        double                                   prior_noise_x_;
+        double                                   prior_noise_y_;
+        double                                   prior_noise_theta_;
+        double                                   odom_noise_x_;
+        double                                   odom_noise_y_;
+        double                                   odom_noise_theta_;
+        double                                   range_noise_bearing_;
+        double                                   range_noise_distance_;
+        double                                   landmark_probability_limit_;
+        int                                      optimization_interval_;
+        std::vector<double>                      init_pose_;
+        
+        // Values and counters
+        int                                      loop_counter_;
+
+        // Flags and mutexes
+        std::mutex                               _symbol_mtx;
+        std::mutex                               _pos_mtx;
+
+        // Loop closure memory
+        std::vector<std::vector<double>>         long_memory_;
+        std::deque<std::vector<double>>          short_memory_;
+
+        // ROS handles, subsriber/publisher
+        ros::NodeHandle                          _nh;
+        ros::Subscriber                          _graph_odom_sub;
+        ros::Subscriber                          _graph_landmark_sub;
+        ros::Subscriber                          _graph_abs_pos_sub;
+        ros::Subscriber                          _loop_detection_sub;
+
+
+
         void _init();
         void _landmark_cb(const geometry_msgs::PoseArray::ConstPtr &msgIn);
         void _loop_detection_cb(const geometry_msgs::PoseArray::ConstPtr &msgIn);
@@ -71,28 +108,8 @@ class GraphOptimizer
         void _add_landmark(const gtsam::Point2 landmarkMsg);
         void _add_pose(const gtsam::Pose2 poseMsg);
         void _optimize_graph();
-        
-        double                                   _data_association_threshold;
-        double                                   _loop_closure_threshold;
-        double                                   _prior_noise_x;
-        double                                   _prior_noise_y;
-        double                                   _prior_noise_theta;
-        double                                   _odom_noise_x;
-        double                                   _odom_noise_y;
-        double                                   _odom_noise_theta;
-        double                                   _range_noise_bearing;
-        double                                   _range_noise_distance;
-        std::vector<double>                      _init_pose;
-        int                                      _optimization_interval;
-        double                                   _landmark_probability_limit;
-        int                                      _loop_counter;
+        std::tuple<double, double, double> ks_test_(const std::vector<double>& sample1, const std::vector<double>& sample2);
 
-        std::vector<std::array<int, 10>>          _landmark_distances_memory;
-
-
-        std::mutex                               _symbol_mtx;
-        std::mutex                               _pos_mtx;
-        ros::NodeHandle                          _nh;
         gtsam::NonlinearFactorGraph              _graph; 
         std::vector<gtsam::Symbol>               _pose_symbols; 
         std::vector<gtsam::Symbol>               _landmark_symbols;
@@ -109,11 +126,6 @@ class GraphOptimizer
         int                                      _opt_counter = 1;
         std::vector<std::pair<float,float>>      _landmark_vector;
 
-
-        ros::Subscriber                          _graph_odom_sub;
-        ros::Subscriber                          _graph_landmark_sub;
-        ros::Subscriber                          _graph_abs_pos_sub;
-        ros::Subscriber                          _loop_detection_sub;
         
         
 };
