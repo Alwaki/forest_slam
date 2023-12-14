@@ -142,7 +142,7 @@ void GraphOptimizer::_loop_detection_cb(const geometry_msgs::PoseArray::ConstPtr
         if(diff < minDiff) 
         {
             minDiff = diff;
-            double threshold = 0.71 * sqrt((n1+n2)/(n1*n2));
+            double threshold = 0.9 * sqrt((n1+n2)/(n1*n2));
             if(minDiff<threshold)
             {
                 loop_detected = 1;
