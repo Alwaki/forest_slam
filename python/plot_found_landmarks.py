@@ -12,7 +12,7 @@ data = np.loadtxt("/home/alwaki/catkin_ws/src/forest_slam/python/data.txt", deli
 plt.plot(data[:,0], data[:,1], "*", markerfacecolor="k", markeredgecolor="k",markersize=12,)
 for i, _ in enumerate(data):
         plt.annotate(str(i+1), (data[i, 0], data[i, 1]), fontsize=12)
-theta = 2.2
+theta = 1.855
 for i in range(len(x)):
     x1 = (x[i]*np.cos(theta) - y[i]*np.sin(theta)) + x0
     y1 = (y[i]*np.cos(theta) + x[i]*np.sin(theta)) + y0
