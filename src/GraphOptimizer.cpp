@@ -6,27 +6,29 @@
 
 #include "GraphOptimizer.h"
 
+// Constructor
 GraphOptimizer::GraphOptimizer():
-    _nh("~")
+    nh_("~")
     {_init();}
 
+// Destructor
 GraphOptimizer::~GraphOptimizer() = default;
 
 void GraphOptimizer::_init()
 {
-    _nh.getParam("/forest_slam/optimization/data_association_threshold", data_association_threshold_);
-    _nh.getParam("/forest_slam/optimization/loop_closure_threshold", loop_closure_threshold_);
-    _nh.getParam("/forest_slam/optimization/prior_noise_x", prior_noise_x_);
-    _nh.getParam("/forest_slam/optimization/prior_noise_y", prior_noise_y_);
-    _nh.getParam("/forest_slam/optimization/prior_noise_theta", prior_noise_theta_);
-    _nh.getParam("/forest_slam/optimization/odom_noise_x", odom_noise_x_);
-    _nh.getParam("/forest_slam/optimization/odom_noise_y", odom_noise_y_);
-    _nh.getParam("/forest_slam/optimization/odom_noise_theta", odom_noise_theta_);
-    _nh.getParam("/forest_slam/optimization/range_noise_bearing", range_noise_bearing_);
-    _nh.getParam("/forest_slam/optimization/range_noise_distance", range_noise_distance_);
-    _nh.getParam("/forest_slam/optimization/init_pose", init_pose_);
-    _nh.getParam("/forest_slam/optimization/optimization_interval", optimization_interval_);
-    _nh.getParam("/forest_slam/optimization/landmark_probability_limit", landmark_probability_limit_);
+    nh_.getParam("/forest_slam/optimization/data_association_threshold", data_association_threshold_);
+    nh_.getParam("/forest_slam/optimization/loop_closure_threshold", loop_closure_threshold_);
+    nh_.getParam("/forest_slam/optimization/prior_noise_x", prior_noise_x_);
+    nh_.getParam("/forest_slam/optimization/prior_noise_y", prior_noise_y_);
+    nh_.getParam("/forest_slam/optimization/prior_noise_theta", prior_noise_theta_);
+    nh_.getParam("/forest_slam/optimization/odom_noise_x", odom_noise_x_);
+    nh_.getParam("/forest_slam/optimization/odom_noise_y", odom_noise_y_);
+    nh_.getParam("/forest_slam/optimization/odom_noise_theta", odom_noise_theta_);
+    nh_.getParam("/forest_slam/optimization/range_noise_bearing", range_noise_bearing_);
+    nh_.getParam("/forest_slam/optimization/range_noise_distance", range_noise_distance_);
+    nh_.getParam("/forest_slam/optimization/init_pose", init_pose_);
+    nh_.getParam("/forest_slam/optimization/optimization_interval", optimization_interval_);
+    nh_.getParam("/forest_slam/optimization/landmark_probability_limit", landmark_probability_limit_);
     
     _current_pose[0] = init_pose_[0];
     _current_pose[1] = init_pose_[1];
@@ -46,22 +48,21 @@ void GraphOptimizer::_init()
     _pose_symbols.push_back(x0);
     _landmark_symbols.push_back(l0);
     _initialEstimate.insert(x0, prior);
-    _graph.add(gtsam::PriorFactor<gtsam::Pose2>(x0, prior, _priorNoise));
+    graph_.add(gtsam::PriorFactor<gtsam::Pose2>(x0, prior, _priorNoise));
 
-
-    _graph_odom_sub = _nh.subscribe<geometry_msgs::PointStamped>
+    graph_odom_sub_ = nh_.subscribe<geometry_msgs::PointStamped>
         ("/estimator_node/odom", 10, &GraphOptimizer::_odom_cb,
         this, ros::TransportHints().tcpNoDelay(true));
    
-    _graph_abs_pos_sub = _nh.subscribe<geometry_msgs::Pose2D>
+    graph_abs_pos_sub_ = nh_.subscribe<geometry_msgs::Pose2D>
         ("/estimator_node/absPose", 1, &GraphOptimizer::_absPose_cb,
         this);
     
-    _graph_landmark_sub = _nh.subscribe<geometry_msgs::PoseArray>
+    graph_landmark_sub_ = nh_.subscribe<geometry_msgs::PoseArray>
         ("/feature_node/extracted_pos", 100, &GraphOptimizer::_landmark_cb,
         this, ros::TransportHints().tcpNoDelay(true));
 
-    _loop_detection_sub = _nh.subscribe<geometry_msgs::PoseArray>
+    loop_detection_sub_ = nh_.subscribe<geometry_msgs::PoseArray>
         ("/feature_node/extracted_pos", 100, &GraphOptimizer::_loop_detection_cb,
         this, ros::TransportHints().tcpNoDelay(true));
         
@@ -232,12 +233,12 @@ void GraphOptimizer::_loop_detection_cb(const geometry_msgs::PoseArray::ConstPtr
         // Successful loop detection, set constraint
         if(max_matches >= loop_closure_threshold_)
         {
-            _symbol_mtx.lock();
+            symbol_mtx_.lock();
             gtsam::Symbol x_matched = _pose_symbols[max_ind];
             gtsam::Pose2 match_odom(0, 0, 0);
-            _graph.add(gtsam::BetweenFactor<gtsam::Pose2>(
+            graph_.add(gtsam::BetweenFactor<gtsam::Pose2>(
             _pose_symbols.back(), x_matched, match_odom, _matchNoise));
-            _symbol_mtx.unlock();
+            symbol_mtx_.unlock();
             //ROS_INFO("--------------------------------------");
             //ROS_INFO("Matched with %d matches!", max_matches);
             cooldown_counter_ = 0;
@@ -256,32 +257,32 @@ void GraphOptimizer::_odom_cb(const geometry_msgs::PointStamped::ConstPtr &msgIn
 
 void GraphOptimizer::_absPose_cb(const geometry_msgs::Pose2D::ConstPtr &msgIn)
 {
-    _pos_mtx.lock();
+    pos_mtx_.lock();
     _current_pose[0] = msgIn->x;
     _current_pose[1] = msgIn->y;
     _current_pose[2] = msgIn->theta;
-    _pos_mtx.unlock();
+    pos_mtx_.unlock();
 
 }
 
 void GraphOptimizer::_add_landmark(const gtsam::Point2 landmarkMsg)
 {
-    _symbol_mtx.lock();
+    symbol_mtx_.lock();
     gtsam::Symbol x_last = _pose_symbols.back();
-    _symbol_mtx.unlock();
+    symbol_mtx_.unlock();
     gtsam::Symbol l('L', _landmark_symbol_idx++);
     _landmark_symbols.push_back(l);
 
 
-    _pos_mtx.lock();
+    pos_mtx_.lock();
     double dy = landmarkMsg[0] - _current_pose[1];
     double dx = landmarkMsg[1] - _current_pose[0];
     double range = sqrt(pow(dx, 2) + pow(dy, 2));
     double bearing = atan2(dy, dx) - _current_pose[2];
-    _pos_mtx.unlock();
+    pos_mtx_.unlock();
     gtsam::Point2 landmark(landmarkMsg[0], landmarkMsg[1]);
     _initialEstimate.insert(l, landmark);
-    _graph.add(gtsam::BearingRangeFactor<gtsam::Pose2, gtsam::Point2>(
+    graph_.add(gtsam::BearingRangeFactor<gtsam::Pose2, gtsam::Point2>(
             x_last,
             l,
             bearing,
@@ -291,18 +292,18 @@ void GraphOptimizer::_add_landmark(const gtsam::Point2 landmarkMsg)
 
 void GraphOptimizer::_add_pose(const gtsam::Pose2 odomMsg)
 {
-    _symbol_mtx.lock();
+    symbol_mtx_.lock();
     gtsam::Symbol x('P', _odom_symbol_idx++);
-    _graph.add(gtsam::BetweenFactor<gtsam::Pose2>(
+    graph_.add(gtsam::BetweenFactor<gtsam::Pose2>(
         _pose_symbols.back(), x, odomMsg, _odomNoise));
     _pose_symbols.push_back(x);
-    _symbol_mtx.unlock();
+    symbol_mtx_.unlock();
     _initialEstimate.insert(x, odomMsg);
 }
 
 void GraphOptimizer::_optimize_graph()
 {
-    gtsam::LevenbergMarquardtOptimizer optimizer(_graph, _initialEstimate);
+    gtsam::LevenbergMarquardtOptimizer optimizer(graph_, _initialEstimate);
     gtsam::Values result = optimizer.optimize();
     result.print("Final Result:\n");
 }

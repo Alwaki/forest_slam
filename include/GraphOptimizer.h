@@ -84,33 +84,22 @@ class GraphOptimizer
         int                                      loop_counter_;
 
         // Flags and mutexes
-        std::mutex                               _symbol_mtx;
-        std::mutex                               _pos_mtx;
+        std::mutex                               symbol_mtx_;
+        std::mutex                               pos_mtx_;
 
         // Loop closure memory
         std::vector<std::vector<double>>         long_memory_;
         std::deque<std::vector<double>>          short_memory_;
 
         // ROS handles, subsriber/publisher
-        ros::NodeHandle                          _nh;
-        ros::Subscriber                          _graph_odom_sub;
-        ros::Subscriber                          _graph_landmark_sub;
-        ros::Subscriber                          _graph_abs_pos_sub;
-        ros::Subscriber                          _loop_detection_sub;
+        ros::NodeHandle                          nh_;
+        ros::Subscriber                          graph_odom_sub_;
+        ros::Subscriber                          graph_landmark_sub_;
+        ros::Subscriber                          graph_abs_pos_sub_;
+        ros::Subscriber                          loop_detection_sub_;
 
-
-
-        void _init();
-        void _landmark_cb(const geometry_msgs::PoseArray::ConstPtr &msgIn);
-        void _loop_detection_cb(const geometry_msgs::PoseArray::ConstPtr &msgIn);
-        void _odom_cb(const geometry_msgs::PointStamped::ConstPtr &msgIn);
-        void _absPose_cb(const geometry_msgs::Pose2D::ConstPtr &msgIn);
-        void _add_landmark(const gtsam::Point2 landmarkMsg);
-        void _add_pose(const gtsam::Pose2 poseMsg);
-        void _optimize_graph();
-        std::tuple<double, double, double> ks_test_(const std::vector<double>& sample1, const std::vector<double>& sample2);
-
-        gtsam::NonlinearFactorGraph              _graph; 
+        // GTSAM objects
+        gtsam::NonlinearFactorGraph              graph_; 
         std::vector<gtsam::Symbol>               _pose_symbols; 
         std::vector<gtsam::Symbol>               _landmark_symbols;
         std::map<gtsam::Symbol, gtsam::Pose2>    _abs_poses;
@@ -126,6 +115,14 @@ class GraphOptimizer
         int                                      _opt_counter = 1;
         std::vector<std::pair<float,float>>      _landmark_vector;
 
-        
-        
+        void _init();
+        void _landmark_cb(const geometry_msgs::PoseArray::ConstPtr &msgIn);
+        void _loop_detection_cb(const geometry_msgs::PoseArray::ConstPtr &msgIn);
+        void _odom_cb(const geometry_msgs::PointStamped::ConstPtr &msgIn);
+        void _absPose_cb(const geometry_msgs::Pose2D::ConstPtr &msgIn);
+        void _add_landmark(const gtsam::Point2 landmarkMsg);
+        void _add_pose(const gtsam::Pose2 poseMsg);
+        void _optimize_graph();
+        std::tuple<double, double, double> ks_test_(const std::vector<double>& sample1, const std::vector<double>& sample2);        
+
 };
