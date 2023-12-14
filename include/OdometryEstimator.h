@@ -58,22 +58,48 @@ class OdometryEstimator
         virtual ~OdometryEstimator();
 
     private:
-        void _init_node();
-        void _lidar_ICP(const geometry_msgs::PoseArray::ConstPtr &msgIn);
-        void _dynamic_transform_broadcast(const sensor_msgs::Imu::ConstPtr &msgIn);
 
-        geometry_msgs::Pose2D                    _current_pos;
-        pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> _icp;
-        ros::Publisher                          _icp_odom_pub;
-        ros::Publisher                          _current_pose2d_pub;
-        ros::NodeHandle                         _nh;
-        tf2_ros::TransformBroadcaster           _dynamic_broadcaster;
-        tf2_ros::TransformBroadcaster           _dynamic_broadcaster2;
-        ros::Subscriber                         _imu_vectornav_sub;
-        ros::Subscriber                         _feature_pos_sub;
-        pcl::PointCloud<pcl::PointXYZ>::Ptr     _prev_cloud;
-        bool                                    _prev_cloud_flag;
-        std::mutex                              _pos_mtx;
-        double                                  _yaw_diff;
-        double                                  _total_distance;
+        // Parameters
+        double                                  max_correspondence_distance_;
+        double                                  maximum_iterations_;
+        double                                  transformation_epsilon_;
+        double                                  euclidean_fitness_epsilon_;
+
+        // Values and counters
+        double                                  yaw_diff_;
+        double                                  total_distance_;
+
+        // Flags & Mutexes
+        bool                                    prev_cloud_flag_;
+        std::mutex                              pos_mtx_;
+
+        // ROS handles, subsriber/publisher
+        ros::NodeHandle                         nh_;
+        ros::Publisher                          icp_odom_pub_;
+        ros::Publisher                          current_pose2d_pub_;
+        tf2_ros::TransformBroadcaster           dynamic_broadcaster_;
+        tf2_ros::TransformBroadcaster           dynamic_broadcaster2_;
+        ros::Subscriber                         imu_vectornav_sub_;
+        ros::Subscriber                         feature_pos_sub_;
+
+        // ROS objects
+        geometry_msgs::Pose2D                   current_pos_;
+
+        // Point cloud library objects
+        pcl::PointCloud<pcl::PointXYZ>::Ptr     prev_cloud_;
+
+        /**
+         * @brief Initialize OdometryEstimator object
+         */
+        void init_node_();
+
+        /**
+         * @brief Scan registration of feature points
+         */
+        void feature_icp_(const geometry_msgs::PoseArray::ConstPtr &msgIn);
+
+        /**
+         * @brief Transform pose publisher
+         */
+        void dynamic_transform_broadcast_(const sensor_msgs::Imu::ConstPtr &msgIn);
 };
