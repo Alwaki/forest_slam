@@ -51,6 +51,30 @@
 #include <string>
 #include <stdio.h>
 
+struct PointXYZT
+{
+    PCL_ADD_POINT4D;
+    std::uint32_t time;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+} EIGEN_ALIGN16;
+
+POINT_CLOUD_REGISTER_POINT_STRUCT(PointXYZT,
+                                 (float, x, x) (float, y, y) (float, z, z)
+                                 (std::uint32_t, time, time))
+
+struct PointXYZIT
+{
+    PCL_ADD_POINT4D;
+    PCL_ADD_INTENSITY;
+    float t;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+} EIGEN_ALIGN16;
+
+POINT_CLOUD_REGISTER_POINT_STRUCT(PointXYZIT,
+                                 (float, x, x) (float, y, y) (float, z, z)
+                                 (float, intensity, intensity) (float, t, t))
+
+
 class OdometryEstimator
 {
     public:
@@ -68,6 +92,7 @@ class OdometryEstimator
         // Values and counters
         double                                  yaw_diff_;
         double                                  total_distance_;
+        ros::Time                               prev_time_;
 
         // Flags & Mutexes
         bool                                    prev_cloud_flag_;
@@ -77,10 +102,12 @@ class OdometryEstimator
         ros::NodeHandle                         nh_;
         ros::Publisher                          icp_odom_pub_;
         ros::Publisher                          current_pose2d_pub_;
+        ros::Publisher                          lidar_processed_pub_;
         tf2_ros::TransformBroadcaster           dynamic_broadcaster_;
-        tf2_ros::TransformBroadcaster           dynamic_broadcaster2_;
+        tf::TransformListener                   tf_listener_;
         ros::Subscriber                         imu_vectornav_sub_;
         ros::Subscriber                         feature_pos_sub_;
+        ros::Subscriber                         lidar_raw_sub_;
 
         // ROS objects
         geometry_msgs::Pose2D                   current_pos_;
@@ -102,4 +129,6 @@ class OdometryEstimator
          * @brief Transform pose publisher
          */
         void dynamic_transform_broadcast_(const sensor_msgs::Imu::ConstPtr &msgIn);
+
+        void lidar_deskew_(const sensor_msgs::PointCloud2::ConstPtr &msgIn);
 };
