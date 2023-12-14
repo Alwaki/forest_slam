@@ -91,7 +91,7 @@ def feature_extract(pcl_msg):
         landmark_marker.color.a = 0.3 + 0.7*certainty
         landmark_marker.pose.position.x = x
         landmark_marker.pose.position.y = y
-        landmark_marker.pose.position.z = 1.5
+        landmark_marker.pose.position.z = 0.0
         landmark_marker.pose.orientation.x = 0
         landmark_marker.pose.orientation.y = 0
         landmark_marker.pose.orientation.z = 0
@@ -108,7 +108,7 @@ def feature_extract(pcl_msg):
 
 if __name__=="__main__":
     rospy.init_node('feature_node', anonymous=True)
-    cloud_sub = rospy.Subscriber("/os_cloud_node/points_filtered", 
+    cloud_sub = rospy.Subscriber("/os_cloud_node/points_transformed", 
                                  data_class=PointCloud2, callback=feature_extract, 
                                  queue_size=10)
     feature_marker_pub = rospy.Publisher("feature_node/markers", 
