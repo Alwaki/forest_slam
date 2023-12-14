@@ -2,7 +2,7 @@ forest_slam:
   # Backend parameters
   optimization:
     data_association_threshold: 2.0
-    loop_closure_threshold: 8
+    loop_closure_threshold: 1
     prior_noise_x: 1.0
     prior_noise_y: 1.0
     prior_noise_theta: 0.1
@@ -13,4 +13,10 @@ forest_slam:
     range_noise_distance: 0.3
     init_pose: [0.0, 0.0, 0.0]
     optimization_interval: 10000
-    landmark_probability_limit: 0.9
+    landmark_probability_limit: 0.8
+  
+  icp:
+    MaxCorrespondenceDistance: 0.2
+    MaximumIterations: 400
+    TransformationEpsilon: 0.000000001
+    EuclideanFitnessEpsilon: 0.01
