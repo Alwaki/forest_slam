@@ -40,7 +40,11 @@ void OdometryEstimator::init_node_()
         this, ros::TransportHints().tcpNoDelay(true));
 
     imu_vectornav_sub_ = nh_.subscribe<sensor_msgs::Imu>
-        ("/vectornav/IMU", 100, &OdometryEstimator::dynamic_transform_broadcast_,
+        ("/imu/data_raw", 100, &OdometryEstimator::dynamic_transform_broadcast_,
+        this, ros::TransportHints().tcpNoDelay(true));
+
+    lidar_raw_sub_  = nh_.subscribe<sensor_msgs::PointCloud2>
+        ("/os_cloud_node/points", 1, &OdometryEstimator::lidar_deskew_,
         this, ros::TransportHints().tcpNoDelay(true));
 
     icp_odom_pub_  = nh_.advertise<geometry_msgs::PointStamped>(
@@ -48,6 +52,9 @@ void OdometryEstimator::init_node_()
     
     current_pose2d_pub_  = nh_.advertise<geometry_msgs::Pose2D>(
         "/estimator_node/absPose", 1);
+
+    lidar_processed_pub_  = nh_.advertise<sensor_msgs::PointCloud2>(
+        "/os_cloud_node/points_transformed", 2);
 }
 
 /**
@@ -125,27 +132,90 @@ void OdometryEstimator::dynamic_transform_broadcast_(const sensor_msgs::Imu::Con
     pos_mtx_.lock();
     yaw_diff_ =  current_pos_.theta - yaw;
     current_pos_.theta = yaw;
+    //ROS_INFO("theta: %lf", current_pos_.theta);
     pos_mtx_.unlock();
     
-    //ROS_INFO("X: %lf, Y: %lf", current_pos_.x,  current_pos_.y);
     transform.transform.translation.x = 0; // current_pos_.x;
     transform.transform.translation.y = 0; // current_pos_.y;
     transform.transform.translation.z = 0;
     transform.header.stamp = msgIn->header.stamp;
-    transform.child_frame_id = "base_link";
+    transform.child_frame_id = "imu";
     transform.header.frame_id = "map";
     dynamic_broadcaster_.sendTransform(transform);
+}
 
-    geometry_msgs::TransformStamped transform2;
-    transform2.transform.rotation = msgIn->orientation;
-    //ROS_INFO("X: %lf, Y: %lf", current_pos_.x,  current_pos_.y);
-    transform2.transform.translation.x = current_pos_.x;
-    transform2.transform.translation.y =  current_pos_.y;
-    transform2.transform.translation.z = 0;
-    transform2.header.stamp = msgIn->header.stamp;
-    transform2.child_frame_id = "moving_base";
-    transform2.header.frame_id = "map";
-    dynamic_broadcaster2_.sendTransform(transform2);
+
+/**
+ * Takes in a raw pointcloud from a 3D lidar sensor and attempts to filter
+ * and deskew it. To deskew, the IMU sensor is used. For filtering, 
+ * invalid points and points at certain range intervals are removed.
+ *
+ * @param msgIn a raw pointcloud to preprocess
+ */
+void OdometryEstimator::lidar_deskew_(const sensor_msgs::PointCloud2::ConstPtr &msgIn)
+{
+    // Create PCL structure 
+    pcl::PointCloud<pcl::PointXYZ>::Ptr filtered_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+    filtered_cloud->width = 0;
+    filtered_cloud->height = 1;
+    filtered_cloud->is_dense = false;
+    filtered_cloud->points.resize(filtered_cloud->width * filtered_cloud->height);
+    filtered_cloud->header.frame_id = msgIn->header.frame_id;
+
+
+    // Get time for motion compensation
+    double dt;
+    if(prev_cloud_flag_ != 1)
+    {
+        dt = 0.1 / ( (double) msgIn->width*msgIn->height);
+    }
+    else
+    {
+        dt = (msgIn->header.stamp - prev_time_).toSec()/( (double) msgIn->width*msgIn->height);
+    }
+    ros::Duration time_offset(dt);
+    prev_time_ = msgIn->header.stamp;
+
+    // Remove points and compensate motion
+    for (sensor_msgs::PointCloud2ConstIterator<float> it(*msgIn, "x"); it != it.end(); ++it) {
+        if(it[0] != 0 && it[1] != 0)
+        {
+        if(4.0 > it[2] &&  it[2] > -1.0)
+        {
+        float distance = it[0] * it[0] + it[1] * it[1];
+        if(distance < 81.0 && distance > 0.4)
+        {
+            auto time = msgIn->header.stamp + time_offset;
+            geometry_msgs::PointStamped p_in, p_out;
+            p_in.point.x = it[0];
+            p_in.point.y = it[1];
+            p_in.point.z = it[2];
+            p_in.header.stamp = time;
+            p_in.header.frame_id = "lidar";
+            tf_listener_.waitForTransform("lidar", "map", time, ros::Duration(0.01));
+            tf_listener_.transformPoint("map", p_in, p_out);
+            pcl::PointXYZ pt;
+            pt.x = p_out.point.x;
+            pt.y = p_out.point.y;
+            pt.z = p_out.point.z;
+            filtered_cloud->points.push_back(pt);
+            filtered_cloud->width++;
+        }
+        }
+        }
+    }
+
+    pcl::PCLPointCloud2 pcl_pc2;
+    pcl::toPCLPointCloud2(*filtered_cloud, pcl_pc2);
+
+    // Convert back to ROS and transform to map frame
+    sensor_msgs::PointCloud2 ros_cloud, map_frame_cloud;
+    pcl_conversions::moveFromPCL(pcl_pc2, map_frame_cloud);
+    map_frame_cloud.header.stamp = msgIn->header.stamp;
+    map_frame_cloud.header.frame_id = "map";
+
+    // Publish cloud
+    lidar_processed_pub_.publish(map_frame_cloud);
 }
 
 /**
