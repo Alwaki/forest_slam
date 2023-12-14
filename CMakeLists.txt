@@ -159,7 +159,6 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(preprocess_node src/Preprocess.cpp)
 add_executable(optimizer_node src/GraphOptimizer.cpp)
 add_executable(estimator_node src/OdometryEstimator.cpp)
 
@@ -175,13 +174,6 @@ add_executable(estimator_node src/OdometryEstimator.cpp)
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(preprocess_node
-   ${catkin_LIBRARIES}
-   ${PCL_LIBRARIES}
-   ${EIGEN_LIBRARIES}
-   gtsam
-)
-
 target_link_libraries(optimizer_node
   ${catkin_LIBRARIES}
   ${PCL_LIBRARIES}
