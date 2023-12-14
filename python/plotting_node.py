@@ -11,7 +11,7 @@ from geometry_msgs.msg import PoseArray, PointStamped
 
 def feature_plot_cb(feature_array_msg):
     for feature in feature_array_msg.poses:
-        if feature.position.z >= 0.6:
+        if feature.position.z >= 0.3:
             if len(feature_list_x) > 0:
                 dist_x = 1000
                 dist_y = 1000
@@ -54,6 +54,15 @@ if __name__=="__main__":
     while not rospy.is_shutdown():
         rospy.spin()
 
+    with open("myfile.txt", "w") as file1:
+        print("hi")
+        print(feature_list_x)
+        print(feature_list_y)
+        for i in range(len(feature_list_x)):
+            file1.write(str(feature_list_x[i]) + " " + str(feature_list_y[i]) + "\n")
+
     plt.plot(curr_x, curr_y, color='black')
     plt.scatter(feature_list_x,feature_list_y, color='blue')
     plt.show()
+
+
