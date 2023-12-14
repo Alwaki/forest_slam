@@ -1,5 +1,9 @@
 <launch>
 
+    <!-- Remapping topic names -->
+    <remap from="/vectornav/IMU" to="/imu/data_raw"/>
+    <remap from="/vectornav/Mag" to="/imu/mag"/>
+
     <!-- Forest dataset -->
     <arg  name="bag_file"  
     default="/home/alwaki/Downloads/first_round.bag"/> 
@@ -9,15 +13,11 @@
     <param name="/use_sim_time" value="true" />
 
     <node required="true" pkg="rosbag" type="play" name="rosbag_player"
-        args="--clock $(arg bag_file) -r 0.2 -s $(arg start_time)"
+        args="--clock $(arg bag_file) -r 0.1 -s $(arg start_time)"
         launch-prefix="bash -c 'sleep 1; $0 $@' "/>
 
     <!-- Parameter server -->
     <rosparam file="$(find forest_slam)/config/settings.yaml" command="load"/>
-
-    <!-- Run the preprocess node -->
-    <node pkg="forest_slam" type="preprocess_node" name="preprocess_node"
-    respawn="false" output="screen" required="true"> </node>
 
     <!-- Run the estimation node -->
     <node pkg="forest_slam" type="estimator_node" name="estimator_node"
@@ -28,23 +28,16 @@
     respawn="false" output="screen" required="true"> </node> 
 
     <!-- IMU package -->
-    <!--
     <node pkg="imu_filter_madgwick" type="imu_filter_node" name="imu_filter_node" 
      output="screen">
      <param name="publish_tf" value="true"/>
      <param name="use_mag" value="true"/>
      <param name="remove_gravity_vector" value="true"/>
       </node>
-    -->
 
     <!-- Setup static transform between sensors -->      
-    <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_vectornav2ouster" 
-    args="0.0 0.0 0.0 0 0 0 1 vectornav os_sensor" />
-    <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_baseLink2vectornav" 
-    args="0.0 0.0 1.9 1 0 0 0 base_link vectornav" />
-
-    <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_movingBase2sensor" 
-    args="0.0 0.0 1.9 1 0 0 0 moving_base sensor" />
+    <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_imu2lidar" 
+    args="0.0 0.0 0.0 1 0 0 0 imu lidar" />
 
     <!-- Run feature extraction node -->
     <node pkg="forest_slam" type="feature_node.py" name="feature_node"
