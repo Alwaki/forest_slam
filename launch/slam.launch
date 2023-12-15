@@ -6,7 +6,7 @@
 
     <!-- Forest dataset -->
     <arg  name="bag_file"  
-    default="/home/alwaki/Downloads/first_round.bag"/> 
+    default="/home/alwaki/Downloads/plot1korsnas.bag"/> 
     <arg name="start_time" default="0"/>
 
     <!-- Play the bag file -->

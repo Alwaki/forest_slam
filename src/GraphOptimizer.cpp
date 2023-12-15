@@ -114,7 +114,7 @@ void GraphOptimizer::_loop_detection_cb(const geometry_msgs::PoseArray::ConstPtr
     */
 
 
-
+   /*
    if(loop_counter_ % 10 == 0)
    {
     std::vector<double> new_memory;
@@ -162,6 +162,7 @@ void GraphOptimizer::_loop_detection_cb(const geometry_msgs::PoseArray::ConstPtr
     }
    }
    loop_counter_++;
+   */
 }
 
 std::tuple<double, double, double> GraphOptimizer::ks_test_(const std::vector<double>& sample1, const std::vector<double>& sample2) 
